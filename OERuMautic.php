@@ -36,6 +36,11 @@ if ( !function_exists( 'add_action' ) ) {
 	exit;
 }
 
+if ( !is_multisite() ) {
+    echo "This plugin is only useful with a multi-site implementation.";
+    exit;
+}
+
 add_shortcode( 'WEnotes', 'wenotes_func' );
 add_shortcode( 'WEnotesPost', 'wenotespost' );
 
