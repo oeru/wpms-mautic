@@ -1,9 +1,9 @@
 <?php
 /**
- * @package OERu Mautic
+ * @package Mautic Synchronise
  */
 /*
-Plugin Name: OERuMautic
+Plugin Name: Mautic Synchronise
 Plugin URI: http://github.com/oeru/wpms-mautic
 Description: Synchronise WordPress users with Course-specific Mautic Segments
   depending on Courses (subsites) with which they are associated
@@ -29,7 +29,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-define( 'OERU_MAUTIC_VERSION', '0.1.0' );
+define( 'MAUTIC_VERSION', '0.1.0' );
 
 if ( !function_exists( 'add_action' ) ) {
 	echo 'This only works as a WordPress plugin.';
@@ -40,6 +40,14 @@ if ( !is_multisite() ) {
     echo "This plugin is only useful with a multi-site implementation.";
     exit;
 }
-
 //add_shortcode( 'WEnotes', 'wenotes_func' );
 //add_shortcode( 'WEnotesPost', 'wenotespost' );
+
+define('MAUTIC_FILE', __FILE__);
+define('MAUTIC_PATH', plugin_dir_path(__FILE__));
+
+require MAUTIC_PATH . 'includes/MauticSync.php';
+//require MAUTIC_PATH . 'includes/MauticAdmin.php';
+
+new MauticSync();
+?>
