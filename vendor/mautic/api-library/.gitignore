@@ -1,0 +1,10 @@
+/.idea
+/.buildpath
+/.project
+/.settings
+/.phpintel
+/composer.lock
+/phpunit.xml
+/tests/local.config.php
+/tests/phpunit.phar
+/vendor
