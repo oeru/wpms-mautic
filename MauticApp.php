@@ -45,6 +45,7 @@ if ( !is_multisite() ) {
 define('MAUTIC_FILE', __FILE__);
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
 define('MAUTIC_KEY_SIZE', 50);
+define('MAUTIC_URL', 'mautic-sync');
 
 require MAUTIC_PATH . 'includes/MauticSync.php';
 //require MAUTIC_PATH . 'includes/MauticAdmin.php';
