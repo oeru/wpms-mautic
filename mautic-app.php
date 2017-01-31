@@ -28,7 +28,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-define( 'MAUTIC_VERSION', '0.1.0' );
+define( 'MAUTIC_VERSION', '0.1.3' );
 
 if ( !function_exists( 'add_action' ) ) {
 	echo 'This only works as a WordPress plugin.';
@@ -43,11 +43,12 @@ if ( !is_multisite() ) {
 //add_shortcode( 'WEnotesPost', 'wenotespost' );
 
 define('MAUTIC_FILE', __FILE__);
+define('MAUTIC_URL', plugins_url("/", __FILE__));
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
 define('MAUTIC_KEY_SIZE', 50);
-define('MAUTIC_URL', 'mautic-sync');
+define('MAUTIC_SLUG', 'mautic-sync');
 
-require MAUTIC_PATH . 'includes/MauticSync.php';
+require MAUTIC_PATH . 'includes/mautic-sync.php';
 //require MAUTIC_PATH . 'includes/MauticAdmin.php';
 
 new MauticSync();

@@ -29,6 +29,7 @@ class MauticSync {
         add_action('admin_init', array($this, 'admin_init'));
         //add_action(is_multisite() ? 'network_admin_menu' : 'admin_menu', 'add_page');
         add_action('admin_menu',  array($this, 'add_page'));
+        // Ajax functionality for
 
         // Listen for the activate event
         register_activation_hook(MAUTIC_FILE, array($this, 'activate'));
@@ -46,52 +47,114 @@ class MauticSync {
     }
 
     public function init() {
+        // This will show the stylesheet in wp_head() in the app/index.php file
+        wp_enqueue_style('stylesheet', MAUTIC_URL.'app/assets/css/styles.css');
+        // registering for use elsewhere
+        wp_register_script('jquery-validate', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js', array('jquery'), true);
+
+        //echo "<p>URL unquoted ". MAUTIC_URL . "</p>\n";
+        //echo "<p>URL quoted ". preg_quote(MAUTIC_URL) . "</p>\n";
+        // if we're on the Mautic page, add our CSS...
         if (preg_match('/\/' . preg_quote(MAUTIC_URL) . '\/?$/', $_SERVER['REQUEST_URI'])) {
-        	// This will show the stylesheet in wp_head() in the app/index.php file
-            wp_enqueue_style('stylesheet', plugins_url(MAUTIC_PATH.'app/assets/css/styles.css'));
+            // This will show the stylesheet in wp_head() in the app/index.php file
+            wp_enqueue_style('stylesheet', MAUTIC_URL.'app/assets/css/styles.css');
 
     		// This will show the scripts in the footer
             //wp_deregister_script('jquery');
             //wp_enqueue_script('jquery', 'http://code.jquery.com/jquery-1.8.2.min.js', array(), false, true);
-            wp_enqueue_script('script', plugins_url(MAUTIC_PATH.'app/assets/js/script.js'), array('jquery'), false, true);
+            wp_enqueue_script('script', MAUTIC_URL.'app/assets/js/script.js', array('jquery'), false, true);
 
             require MAUTIC_PATH . 'app/index.php';
             exit;
         }
-
     }
 
     // White list our options using the Settings API
     public function admin_init() {
+        wp_enqueue_script( 'jquery-validate');
+        // embed the javascript file that makes the AJAX request
+        wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/assets/js/ajax.js', array(
+            'jquery',
+            'jquery-form'
+        ));
+        // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+        wp_localize_script( 'mautic-ajax-request', 'MauticSyncAjax', array(
+            'ajaxurl' => admin_url( 'admin-ajax.php' ),
+            'submitNonce' => wp_create_nonce( 'mautic-submit-nonse'),
+            'authNonce' => wp_create_nonce( 'mautic-auth-nonse'),
+        ));
+        // if both logged in and not logged in users can send this AJAX request,
+        // add both of these actions, otherwise add only the appropriate one
+        //add_action( 'wp_ajax_nopriv_mautic_submit', 'ajax_submit' );
+        add_action( 'wp_ajax_mautic_submit', 'ajax_submit' );
+        add_action( 'wp_ajax_mautic_auth', 'ajax_auth');
+
+        // register the validation function to "sanitise" values in mautic_options
         register_setting('mautic_options', $this->option_name, array($this, 'validate'));
-        //echo "testing!\n";
+    }
+
+    public function ajax_submit() {
+        // get the submitted parameters
+        $nonce = $_POST['submitNonce'];
+
+        echo "<p>nonce = $nonce</p>\n";
+
+        // check if the submitted nonce matches the generated nonce created in the auth_init functionality
+        if ( ! wp_verify_nonce( $nonce, 'mautic-submit-nonse') ) {
+            die ("Busted in submit!");
+        }
+
+        // generate the response
+        $response = json_encode( array( 'success' => true ) );
+
+        // response output
+        header( "Content-Type: application/json" );
+        echo $response;
+        // IMPORTANT: don't forget to "exit"
+        exit;
+    }
+
+    public function ajax_auth() {
+        // get the submitted parameters
+        $nonce = $_POST['authNonce'];
+
+        // check if the submitted nonce matches the generated nonce created in the auth_init functionality
+        if ( ! wp_verify_nonce( $nonce, 'mautic-auth-nonse') ) {
+            die ("Busted in auth!");
+        }
+
+        // generate the response
+        $response = json_encode( array( 'success' => true ) );
+
+        // response output
+        header( "Content-Type: application/json" );
+        echo $response;
+        // IMPORTANT: don't forget to "exit"
+        exit;
     }
 
     // Add entry in the settings menu
     public function add_page() {
-        add_options_page('Mautic Synchronisation Settings', 'Mautic Settings', 'manage_options', 'mautic_options', array($this, 'options_page'));
-        // only show this option if we have well formed authentication details
-        $if_auth = get_option($this->option_name['mautic_auth_info']);
-        //echo "<p>if_auth = $if_auth</p>\n";
-        if ($if_auth) {
-            add_options_page('Mautic Authenticate', 'Mautic Auth', 'manage_options', 'mautic_auth', array($this, 'authentication_page'));
-        }
+        add_options_page('Mautic Synchronisation Settings', 'Mautic Settings',
+            'manage_options', 'mautic_options', array($this, 'ajax_options_page'));
     }
 
     // Print the menu page itself
-    public function options_page() {
+    public function ajax_options_page() {
         $options = get_option($this->option_name);
+        //$nonce = wp_create_nonce('mautic-options');
         ?>
-        <div class="wrap">
+        <div class="wrap" id="MauticSyncAjax">
             <h2>Mautic Synchronisation Settings</h2>
-            <form method="post" action="options.php">
+            <!-- <form method="post" action="options.php"> -->
+            <form method="post" action="" id="mautic-sync-form">
                 <?php settings_fields('mautic_options'); ?>
                 <table class="form-table">
                     <tr valign="top">
                         <th scope="row">Mautic API Address (URL)</th>
                         <td><input type="text" name="<?php echo $this->option_name?>[mautic_url]" value="<?php
-                            echo $options['mautic_url']; ?>" style="width: 18em;" />
-                            <span class="description">This should be the web address of your Mautic instance, probably including an /api.</span>
+                            echo $options['mautic_url']; ?>" style="width: 30em;" />
+                            <span class="description">Should be the web address of your Mautic instance, probably including an /api.</span>
                         </td>
                     </tr>
 
@@ -99,7 +162,7 @@ class MauticSync {
                         <th scope="row">Mautic API Public Key</th>
                         <td><input type="text" name="<?php echo $this->option_name?>[mautic_public_key]" value="<?php
                             echo $options['mautic_public_key']; ?>" style="width: 30em;" />
-                            <span class="description">Is should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long.</span>
+                            <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long.</span>
                         </td>
                     </tr>
 
@@ -107,15 +170,14 @@ class MauticSync {
                         <th scope="row">Mautic API Secret Key</th>
                         <td><input type="text" name="<?php echo $this->option_name?>[mautic_secret_key]" value="<?php
                             echo $options['mautic_secret_key']; ?>" style="width: 30em;" />
-                            <span class="description">Is should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long. Keep this one secret!</span>
+                            <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long. Keep this one secret!</span>
                         </td>
                     </tr>
-
                 </table>
-                <?php wp_nonce_field('oeru_user_nonce', 'security'); ?>
 
                 <p class="submit">
-                    <input type="submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
+                    <input type="submit" id="mautic-submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
+                    <input type="button" id="mautic-auth" class="button-secondary" value="Test Authentication" />
                 </p>
             </form>
         </div>
