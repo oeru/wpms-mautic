@@ -53,9 +53,10 @@ class MauticSync {
         wp_register_script('jquery-validate', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js', array('jquery'), true);
 
         //echo "<p>URL unquoted ". MAUTIC_URL . "</p>\n";
+        //error_log('current MAUTIC_URL ' . MAUTIC_URL);
         //echo "<p>URL quoted ". preg_quote(MAUTIC_URL) . "</p>\n";
         // if we're on the Mautic page, add our CSS...
-        if (preg_match('/\/' . preg_quote(MAUTIC_URL) . '\/?$/', $_SERVER['REQUEST_URI'])) {
+        if (preg_match('~\/' . preg_quote(MAUTIC_URL) . '\/?$~', $_SERVER['REQUEST_URI'])) {
             // This will show the stylesheet in wp_head() in the app/index.php file
             wp_enqueue_style('stylesheet', MAUTIC_URL.'app/assets/css/styles.css');
 
@@ -86,24 +87,45 @@ class MauticSync {
         // if both logged in and not logged in users can send this AJAX request,
         // add both of these actions, otherwise add only the appropriate one
         //add_action( 'wp_ajax_nopriv_mautic_submit', 'ajax_submit' );
-        add_action( 'wp_ajax_mautic_submit', 'ajax_submit' );
-        add_action( 'wp_ajax_mautic_auth', 'ajax_auth');
+        add_action( 'wp_ajax_mautic_submit', array($this, 'ajax_submit'));
+        add_action( 'wp_ajax_mautic_auth', array($this, 'ajax_auth'));
 
         // register the validation function to "sanitise" values in mautic_options
-        register_setting('mautic_options', $this->option_name, array($this, 'validate'));
+        //register_setting('mautic_options', $this->option_name, array($this, 'validate'));i
+        //unregister_setting('mautic_options', $this->option_name);
     }
 
     public function ajax_submit() {
         // get the submitted parameters
-        $nonce = $_POST['submitNonce'];
-
-        echo "<p>nonce = $nonce</p>\n";
+        $nonce = $_POST['nonce-submit'];
 
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
         if ( ! wp_verify_nonce( $nonce, 'mautic-submit-nonse') ) {
             die ("Busted in submit!");
         }
 
+        // otherwise, to form is legit, so proceed.
+	$input = array(
+            'mautic_url' => sanitize_text_field($_POST['url']),
+            'mautic_public_key' => sanitize_text_field($_POST['public_key']),
+            'mautic_secret_key' => sanitize_text_field($_POST['secret_key']),
+            'mautic_auth_info' => false
+        );
+
+	error_log('post array: '.print_r($input, true));
+
+	if ($valid=$this->validate($input)) {
+            $updated=update_option('mautic-settings-group', $valid, true);
+            if ($updated) {
+                errorlog('updated mautic options: ', print_r($valid));
+            }
+            else {
+                errorlog('failed to update mautic options');
+            }
+        }
+        else {
+            die ("Bad input!");
+        }
         // generate the response
         $response = json_encode( array( 'success' => true ) );
 
@@ -152,51 +174,54 @@ class MauticSync {
                 <table class="form-table">
                     <tr valign="top">
                         <th scope="row">Mautic API Address (URL)</th>
-                        <td><input type="text" name="<?php echo $this->option_name?>[mautic_url]" value="<?php
-                            echo $options['mautic_url']; ?>" style="width: 30em;" />
-                            <span class="description">Should be the web address of your Mautic instance, probably including an /api.</span>
+                        <td><input type="text" id="mautic-url" 
+                            name="<?php echo $this->option_name?>[mautic_url]" 
+                            value="<?php echo $options['mautic_url']; ?>" style="width: 30em;" /><br/>
+                            <span class="description">Should be a valid web address for your Mautic instance including schema (http:// or https://) and path, e.g. /api.</span>
                         </td>
                     </tr>
 
                     <tr valign="top">
                         <th scope="row">Mautic API Public Key</th>
-                        <td><input type="text" name="<?php echo $this->option_name?>[mautic_public_key]" value="<?php
-                            echo $options['mautic_public_key']; ?>" style="width: 30em;" />
+                        <td><input type="text" id="mautic-public-key" 
+                            name="<?php echo $this->option_name?>[mautic_public_key]" 
+                            value="<?php echo $options['mautic_public_key']; ?>" style="width: 30em;" /><br/>
                             <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long.</span>
                         </td>
                     </tr>
 
                     <tr valign="top">
                         <th scope="row">Mautic API Secret Key</th>
-                        <td><input type="text" name="<?php echo $this->option_name?>[mautic_secret_key]" value="<?php
-                            echo $options['mautic_secret_key']; ?>" style="width: 30em;" />
+                        <td><input type="text" id="mautic-secret-key" 
+                            name="<?php echo $this->option_name?>[mautic_secret_key]" 
+                            value="<?php echo $options['mautic_secret_key']; ?>" style="width: 30em;" /><br/>
                             <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long. Keep this one secret!</span>
                         </td>
                     </tr>
                 </table>
+		<input type="hidden" id="mautic-auth-info" name="<?php echo $this->option_name?>[mautic_auth_info]" 
+                    value="<?php echo $options['mautic_auth_info']; ?>" />
 
                 <p class="submit">
                     <input type="submit" id="mautic-submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
                     <input type="button" id="mautic-auth" class="button-secondary" value="Test Authentication" />
                 </p>
+                <p id="mautic-userstatus" style="color: red">&nbsp;</p>
             </form>
         </div>
         <?php
     }
 
     // Make sure the options are valid!
-    public function validate($input) {
+    // assumes the values in $valid are pre-sanitized!
+    public function validate($valid) {
 
-        $valid = array();
-        $valid['mautic_url'] = sanitize_text_field($input['mautic_url']);
-        $valid['mautic_public_key'] = sanitize_text_field($input['mautic_public_key']);
-        $valid['mautic_secret_key'] = sanitize_text_field($input['mautic_secret_key']);
-        $valid['mautic_auth_info'] = false;
-
-        echo ("<p>TESTING ".$valid['mautic_url']."</p>\n");
+        //echo ("<p>TESTING ".$valid['mautic_url']."</p>\n");
+       error_log("TESTING ".$valid['mautic_url']."\n");
 
         if (filter_var($valid['mautic_url'], FILTER_VALIDATE_URL) !== false) {
-            echo ("<p>".$valid['mautic_url']." is a valid URL!</p>\n");
+            //echo ("<p>".$valid['mautic_url']." is a valid URL!</p>\n");
+            error_log($valid['mautic_url']." is a valid URL!\n");
         }
         else {
             add_settings_error(
@@ -205,13 +230,14 @@ class MauticSync {
                 'Please enter a valid Mautic API URL',		// error message
                 'error'							// type of message
             );
-			# Set it to the default value
-			$valid['mautic_url'] = $input['mautic_url'];
+            # Set it to the default value
+    	    $valid['mautic_url'] = $input['mautic_url'];
         }
 
         $len = $this->is_valid_key($valid['mautic_public_key']);
         if ($len === true ) {
-            echo ("<p>".$valid['mautic_public_key']." is a correctly formed Key!</p>\n");
+            //echo ("<p>".$valid['mautic_public_key']." is a correctly formed Key!</p>\n");
+            error_log($valid['mautic_public_key']." is a correctly formed Key!\n");
         }
         else {
             add_settings_error(
@@ -225,7 +251,8 @@ class MauticSync {
 
         $len2 = $this->is_valid_key($valid['mautic_secret_key']);
         if ($len2 === true) {
-            echo ("<p>Your Mautic Secret Key is correctly formed</p>\n");
+            //echo ("<p>Your Mautic Secret Key is correctly formed</p>\n");
+            error_log("Your Mautic Secret Key is correctly formed\n");
         }
         else {
             add_settings_error(
@@ -250,10 +277,6 @@ class MauticSync {
         return true;
     }
 
-    public function authentication_page() {
-
-    }
-
     public function mautic_auth() {
         require_once 'mautic-api-library/lib/MauticApi.php';
 
@@ -262,41 +285,5 @@ class MauticSync {
         }
 
         return true;
-    }
-
-    // This method is called when an
-    // AJAX request is made to the plugin
-    public function ajax() {
-        $id = -1;
-        $data = '';
-        $verb = '';
-
-        $response = array();
-
-        if (isset($_POST['verb'])) {
-            $verb = $_POST['verb'];
-        }
-
-        if (isset($_POST['id'])) {
-            $id = (int) $_POST['id'];
-        }
-
-        if (isset($_POST['data'])) {
-            $data = wp_strip_all_tags($_POST['data']);
-        }
-
-        $post = null;
-
-        switch ($verb) {
-            case 'save':
-            break;
-
-            case 'delete':
-            break;
-        }
-
-        // Print the response as json and exit
-        header("Content-type: application/json");
-        die(json_encode($response));
     }
 }
