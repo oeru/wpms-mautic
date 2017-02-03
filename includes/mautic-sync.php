@@ -59,8 +59,8 @@ class MauticSync {
         // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
         wp_localize_script( 'mautic-ajax-request', 'mautic-sync-ajax', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
-            'submitNonce' => wp_create_nonce( 'mautic-submit-nonse'),
-            'authNonce' => wp_create_nonce( 'mautic-auth-nonse'),
+            'submit-nonce' => wp_create_nonce( 'mautic-submit-nonse'),
+            'auth-nonce' => wp_create_nonce( 'mautic-auth-nonse'),
         ));
         // if both logged in and not logged in users can send this AJAX request,
         // add both of these actions, otherwise add only the appropriate one
@@ -78,13 +78,12 @@ class MauticSync {
     // Print the menu page itself
     public function ajax_options_page() {
         $options = $this->get_options();
-        //$nonce = wp_create_nonce('mautic-options');
+        $nonce_submit= wp_create_nonce('mautic-submit');
         ?>
         <div class="wrap" id="mautic-sync-ajax">
             <h2>Mautic Synchronisation Settings</h2>
             <!-- <form method="post" action="options.php"> -->
             <form method="post" action="" id="mautic-sync-form">
-                <?php settings_fields('mautic_options'); ?>
                 <table class="form-table">
                     <tr valign="top">
                         <th scope="row">Mautic API Address (URL)</th>
@@ -111,8 +110,9 @@ class MauticSync {
                     </tr>
                 </table>
                 <p class="submit">
-                    <input type="submit" id="mautic-submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
+                    <input type="submit" id="mautic-submit" class="button-primary" value="Save Changes" />
                     <input type="button" id="mautic-auth" class="button-secondary" value="Test Authentication" />
+                    <input type="hidden" id="mautic-submit-nonce" value="<?php echo $nonce_submit; ?>" />
                 </p>
                 <p id="mautic-userstatus" style="color: red">&nbsp;</p>
             </form>
@@ -121,15 +121,15 @@ class MauticSync {
     }
 
     // load saved options, if any
-    public get_options() {
+    public function get_options() {
         foreach ($this->data as $option => $default) {
-            $this->data[$option] = ($saved = get_option($option)) : $saved : $default;
+            $this->data[$option] = ($saved = get_option($option)) ? $saved : $default;
         }
         return $this->data;
     }
 
     // the ajax form should only ever return valid options
-    public save_valid_options() {
+    public function save_valid_options() {
         if ($_POST && isset($_POST['url']) && isset($_POST['public_key']) && isset($_POST['secret_key'])) {
             // grab saved values from Ajax form
             $this->data['mautic_url'] = sanitize_text_field($_POST['url']);
