@@ -2,25 +2,25 @@
 // and https://pippinsplugins.com/using-ajax-your-plugin-wordpress-admin/
 
 jQuery(document).ready(function() {
-    console.log('MauticSyncAjax', MauticSyncAjax);  
+    console.log('mautic-sync-ajax', mautic-sync-ajax);
 
-    var $ = jQuery, 
+    var $ = jQuery,
         url = $.trim($('#mautic-url').val()),
         public_key = $.trim($('#mautic-public-key').val()),
         secret_key = $.trim($('#mautic-secret-key').val()),
         auth_info = $.trim($('#mautic-auth-info').val()),
-        ajax_url = MauticSyncAjax.ajaxurl,
-        submit_nonce = MauticSyncAjax.submitNonce,
-        auth_nonce = MauticSyncAjax.authNonce;
+        ajax_url = mautic-sync-ajax.ajaxurl,
+        submit_nonce = mautic-sync-ajax.submit-nonce,
+        auth_nonce = mautic-sync-ajax.auth-nonce;
 
     console.log('secret_key: ', secret_key);
     console.log('ajax_url: ', ajax_url);
 
-    if (auth_info == "") { 
-        auth_info = false; 
+    if (auth_info == "") {
+        auth_info = false;
         console.log('auth_info = ' + auth_info);
     }
- 
+
     // if auth_info is recorded, this is true
     $('#mautic-auth').prop('disabled', !auth_info);
     $('#mautic-userstatus').text('Ready...');
@@ -29,7 +29,7 @@ jQuery(document).ready(function() {
     $('#mautic-sync-form').submit(function() {
         // disable the submit button until it returns.
         $('#mautic-submit').attr('disabled', true);
-	//alert('test submit');
+	    //alert('test submit');
         data = {
             'action': 'mautic_submit',
             'nonce-submit' : submit_nonce,
@@ -40,14 +40,14 @@ jQuery(document).ready(function() {
             'auth_info' : auth_info
         };
         console.log("data = ", data);
-	$('#mautic-userstatus').html('Processing...');
+	    $('#mautic-userstatus').html('Processing...');
         /*$.post(ajaxurl, data, function(response) {
             alert(response);
         });  */
         $.ajax({
             type: 'POST',
             dataType: 'json',
-            url: MauticSyncAjax.ajaxurl,
+            url: mautic-sync-ajax.ajaxurl,
             data: {
                 'action': 'mautic_submit',
                 'do' : 'something',
@@ -62,14 +62,16 @@ jQuery(document).ready(function() {
                 // re-enable the submit button
                 console.log('Set auth_info = true');
                 $('#mautic-submit').attr('disabled', false);
-                console.log('Success: data: ', data)
+                $('#mautic-auth').attr('disabled', false);
+                console.log('Success: data: ', data);
             },
             failure: function() {
-                console.log('Failure: data: ', data)
+                console.log('Failure: data: ', data);
+                $('#mautic-auth').attr('disabled', true);
                 $('#mautic-userstatus').text('error!');
-            }           
+            }
         });
-
+        // if nothing else returns this first, there was a problem...
         return false;
     });
 
@@ -84,15 +86,15 @@ jQuery(document).ready(function() {
         submit_nonce = MauticSyncAjax.submitNonce,
         auth_nonce = MauticSyncAjax.authNonce;
     //console.log('auth_info:' + auth_info);
-    if (auth_info == "") { 
-	auth_info = false; 
+    if (auth_info == "") {
+	auth_info = false;
 	console.log('auth_info = ' + auth_info);
     }
- 
+
     // if auth_info is recorded, this is true
     $('#mautic-auth').prop('disabled', !auth_info);
 
-    console.log('MauticSyncAjax', MauticSyncAjax);  
+    console.log('MauticSyncAjax', MauticSyncAjax);
 
     $('#mautic-sync-form').validate({
         submitHandler: function(form) {
@@ -113,7 +115,7 @@ jQuery(document).ready(function() {
             }
         }
     });
-    
+
     $.ajax({
         type: 'POST',
         dataType: 'json',
@@ -133,4 +135,3 @@ jQuery(document).ready(function() {
         }
     });*/
 });
-

@@ -28,7 +28,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-define( 'MAUTIC_VERSION', '0.1.3' );
+define( 'MAUTIC_VERSION', '0.1.4' );
 
 if ( !function_exists( 'add_action' ) ) {
 	echo 'This only works as a WordPress plugin.';
