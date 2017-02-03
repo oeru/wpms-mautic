@@ -25,8 +25,44 @@ jQuery(document).ready(function() {
     $('#mautic-auth').prop('disabled', !auth_info);
     $('#mautic-userstatus').text('Ready...');
 
+    $('#mautic-sync-form').validate({
+        submitHandler: function(form) {
+            console.log('you just submitted the form in the validator');
+            $(form).ajaxSubmit();
+        },
+        rules: {
+            mautic-url: {
+                required: true,
+                url: true
+            },
+            mautic-public-key: {
+                required: true,
+                rangelength: [50, 50]
+            },
+            mautic-secret-key: {
+                required: true,
+                rangelength: [50, 50]
+            }
+        }
+        messages: {
+            mautic-url: {
+                required: "You must enter a valid web address (URL) for your Mautic API endpoint.",
+                url: "You must enter a valid web address (URL) for your Mautic API endpoint."
+            }
+            mautic-public-key: {
+                required: "You must submit a 50 character public key from your Mautic API settings.",
+                rangelength: "TO be valid, your key must be 50 characters (a combination of numbers and letters) long."
+            }
+            mautic-secret-key: {
+                required: "You must submit a 50 character secret key from your Mautic API settings.",
+                rangelength: "TO be valid, your key must be 50 characters (a combination of numbers and letters) long."
+            }
+        }
+    });
+
     // handle the submit button being pushed
     $('#mautic-sync-form').submit(function() {
+        event.preventDefault();
         // disable the submit button until it returns.
         $('#mautic-submit').attr('disabled', true);
 	    //alert('test submit');
