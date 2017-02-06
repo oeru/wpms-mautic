@@ -2,16 +2,16 @@
 // and https://pippinsplugins.com/using-ajax-your-plugin-wordpress-admin/
 
 jQuery(document).ready(function() {
-    console.log('mautic-sync-ajax', mautic-sync-ajax);
+    console.log('mautic-sync-ajax', mautic_sync_ajax);
 
     var $ = jQuery,
         url = $.trim($('#mautic-url').val()),
         public_key = $.trim($('#mautic-public-key').val()),
         secret_key = $.trim($('#mautic-secret-key').val()),
         auth_info = $.trim($('#mautic-auth-info').val()),
-        ajax_url = mautic-sync-ajax.ajaxurl,
-        submit_nonce = mautic-sync-ajax.submit-nonce,
-        auth_nonce = mautic-sync-ajax.auth-nonce;
+        ajax_url = mautic_sync_ajax.ajaxurl,
+        submit_nonce = mautic_sync_ajax.submit_nonce,
+        auth_nonce = mautic_sync_ajax.auth_nonce;
 
     console.log('secret_key: ', secret_key);
     console.log('ajax_url: ', ajax_url);
@@ -31,31 +31,31 @@ jQuery(document).ready(function() {
             $(form).ajaxSubmit();
         },
         rules: {
-            mautic-url: {
+            'mautic-url': {
                 required: true,
                 url: true
             },
-            mautic-public-key: {
+            'mautic-public-key': {
                 required: true,
                 rangelength: [50, 50]
             },
-            mautic-secret-key: {
+            'mautic-secret-key': {
                 required: true,
                 rangelength: [50, 50]
             }
-        }
+        },
         messages: {
-            mautic-url: {
+            'mautic-url': {
                 required: "You must enter a valid web address (URL) for your Mautic API endpoint.",
                 url: "You must enter a valid web address (URL) for your Mautic API endpoint."
-            }
-            mautic-public-key: {
+            },
+            'mautic-public-key': {
                 required: "You must submit a 50 character public key from your Mautic API settings.",
-                rangelength: "TO be valid, your key must be 50 characters (a combination of numbers and letters) long."
-            }
-            mautic-secret-key: {
+                rangelength: "Your key must be 50 characters (a combination of numbers and letters) long."
+            },
+            'mautic-secret-key': {
                 required: "You must submit a 50 character secret key from your Mautic API settings.",
-                rangelength: "TO be valid, your key must be 50 characters (a combination of numbers and letters) long."
+                rangelength: "Your key must be 50 characters (a combination of numbers and letters) long."
             }
         }
     });

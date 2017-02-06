@@ -57,10 +57,10 @@ class MauticSync {
             'jquery-form'
         ));
         // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-        wp_localize_script( 'mautic-ajax-request', 'mautic-sync-ajax', array(
+        wp_localize_script( 'mautic-ajax-request', 'mautic_sync_ajax', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
-            'submit-nonce' => wp_create_nonce( 'mautic-submit-nonse'),
-            'auth-nonce' => wp_create_nonce( 'mautic-auth-nonse'),
+            'submit_nonce' => wp_create_nonce( 'mautic-submit-nonse'),
+            'auth_nonce' => wp_create_nonce( 'mautic-auth-nonse'),
         ));
         // if both logged in and not logged in users can send this AJAX request,
         // add both of these actions, otherwise add only the appropriate one
@@ -80,7 +80,7 @@ class MauticSync {
         $options = $this->get_options();
         $nonce_submit= wp_create_nonce('mautic-submit');
         ?>
-        <div class="wrap" id="mautic-sync-ajax">
+        <div class="wrap" id="mautic_sync_ajax">
             <h2>Mautic Synchronisation Settings</h2>
             <!-- <form method="post" action="options.php"> -->
             <form method="post" action="" id="mautic-sync-form">
@@ -152,7 +152,7 @@ class MauticSync {
         // get the submitted parameters
         $nonce = $_POST['nonce-submit'];
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
-        if ( ! wp_verify_nonce( $nonce, 'mautic-submit-nonse') ) {
+        if ( ! wp_verify_nonce( $nonce, 'submit-nonse') ) {
             die ("Busted in submit!");
         }
 

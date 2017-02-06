@@ -1,1 +1,10 @@
 /* mautic-sync styles */
+
+#mautic-sync-form input.error {
+  border: solid 1px red;
+}
+
+#mautic-sync-form label.error {
+  color: red;
+  margin-left: 10px;
+}
