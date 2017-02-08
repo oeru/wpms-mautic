@@ -8,3 +8,8 @@
   color: red;
   margin-left: 10px;
 }
+
+#mautic-sync-form input.valid {
+  border: 1px solid green;
+}
+

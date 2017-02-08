@@ -4,33 +4,23 @@
 jQuery(document).ready(function() {
     console.log('mautic-sync-ajax', mautic_sync_ajax);
 
-    var $ = jQuery,
-        url = $.trim($('#mautic-url').val()),
-        public_key = $.trim($('#mautic-public-key').val()),
-        secret_key = $.trim($('#mautic-secret-key').val()),
-        auth_info = $.trim($('#mautic-auth-info').val()),
-        ajax_url = mautic_sync_ajax.ajaxurl,
-        submit_nonce = mautic_sync_ajax.submit_nonce,
-        auth_nonce = mautic_sync_ajax.auth_nonce;
+    var $ = jQuery, auth_info = $.trim($('#mautic-auth-info').val());
 
-    console.log('secret_key: ', secret_key);
-    console.log('ajax_url: ', ajax_url);
+    auth_info = (auth_info == '1') ? true : false;
 
-    if (auth_info == "") {
-        auth_info = false;
-        console.log('auth_info = ' + auth_info);
-    }
+    console.log('auth_info = '+auth_info);
 
     // if auth_info is recorded, this is true
     $('#mautic-auth').prop('disabled', !auth_info);
     $('#mautic-userstatus').text('Ready...');
 
     $('#mautic-sync-form').validate({
-        submitHandler: function(form) {
-            console.log('you just submitted the form in the validator');
-            $(form).ajaxSubmit();
-        },
-        rules: {
+        /*submitHandler: function(form) {
+            //console.log('you just submitted the form in the validator');
+            //$(form).ajaxSubmit();
+        },*/
+        validClass: "valid",
+       rules: {
             'mautic-url': {
                 required: true,
                 url: true
@@ -60,114 +50,60 @@ jQuery(document).ready(function() {
         }
     });
 
+    // handle (re)load of the page 
+    $(window).on('load', function() {
+        console.log('in load');
+        $('#mautic-submit').attr('disabled', false);
+        $('#mautic-userstatus').html('Ready...');
+    });
+
+    // set this up to submit on 'enter'
+    $('input').keypress( function (e) {
+        c = e.which ? e.which : e.keyCode;
+        console.log('input: ' + c);
+        if (c == 13) { 
+            $('#mautic-sync-form').submit();
+            return false;
+        }
+    });
+
     // handle the submit button being pushed
     $('#mautic-sync-form').submit(function() {
-        event.preventDefault();
         // disable the submit button until it returns.
         $('#mautic-submit').attr('disabled', true);
-	    //alert('test submit');
-        data = {
-            'action': 'mautic_submit',
-            'nonce-submit' : submit_nonce,
-            'nonce-auth' : auth_nonce,
-            'url' : url,
-            'public_key' : public_key,
-            'secret_key' : secret_key,
-            'auth_info' : auth_info
-        };
-        console.log("data = ", data);
-	    $('#mautic-userstatus').html('Processing...');
-        /*$.post(ajaxurl, data, function(response) {
-            alert(response);
-        });  */
-        $.ajax({
+       $('#mautic-userstatus').html('Processing...');
+       $.ajax({
+
             type: 'POST',
             dataType: 'json',
-            url: mautic-sync-ajax.ajaxurl,
+            url: mautic_sync_ajax.ajaxurl,
             data: {
                 'action': 'mautic_submit',
                 'do' : 'something',
-                'nonce-submit' : submit_nonce,
-                'nonce-auth' : auth_nonce,
-                'url' : url,
-                'public_key' : public_key,
-                'secret_key' : secret_key,
-                'auth_info' : auth_info
+                'nonce-submit' : mautic_sync_ajax.submit_nonce,
+                'nonce-auth' : mautic_sync_ajax.auth_nonce,
+                'url' : $.trim($('#mautic-url').val()),
+                'public_key' : $.trim($('#mautic-public-key').val()),
+                'secret_key' : $.trim($('#mautic-secret-key').val())
             },
             success: function(data) {
                 // re-enable the submit button
                 console.log('Set auth_info = true');
                 $('#mautic-submit').attr('disabled', false);
                 $('#mautic-auth').attr('disabled', false);
+                $('#mautic-userstatus').html('Saved...');
                 console.log('Success: data: ', data);
+                return true;
             },
             failure: function() {
                 console.log('Failure: data: ', data);
                 $('#mautic-auth').attr('disabled', true);
-                $('#mautic-userstatus').text('error!');
+                $('#mautic-userstatus').text('Error!');
             }
         });
         // if nothing else returns this first, there was a problem...
         return false;
     });
 
-
-/*    //console.log('In jQuery .ready');
-
-    var url = $.trim($('#mautic_url').val()),
-        public_key = $.trim($('#mautic_public_key').val()),
-        secret_key = $.trim($('#mautic_secret_key').val()),
-        auth_info = $.trim($('#mautic_auth_info').val()),
-        ajax_url = MauticSyncAjax.ajaxurl,
-        submit_nonce = MauticSyncAjax.submitNonce,
-        auth_nonce = MauticSyncAjax.authNonce;
-    //console.log('auth_info:' + auth_info);
-    if (auth_info == "") {
-	auth_info = false;
-	console.log('auth_info = ' + auth_info);
-    }
-
-    // if auth_info is recorded, this is true
-    $('#mautic-auth').prop('disabled', !auth_info);
-
-    console.log('MauticSyncAjax', MauticSyncAjax);
-
-    $('#mautic-sync-form').validate({
-        submitHandler: function(form) {
-            $(form).ajaxSubmit();
-        },
-        rules: {
-            mautic_url: {
-                required: true,
-                url: true
-            },
-            mautic_public_key: {
-                required: true,
-                rangelength: [50, 50]
-            },
-            mautic_secret_key: {
-                required: true,
-                rangelength: [50, 50]
-            }
-        }
-    });
-
-    $.ajax({
-        type: 'POST',
-        dataType: 'json',
-        url: MauticSyncAjax.ajaxurl,
-        data: {
-            'action' : 'MauticAction',
-            'do' : 'something',
-            'nonce-submit' : submit_nonce,
-            'nonce-auth' : auth_nonce,
-            'url' : url,
-            'public_key' : public_key,
-            'secret_key' : secret_key,
-            'auth_info' : auth_info
-        },
-        success: function(data) {
-            console.log('MauticSyncData', data);
-        }
-    });*/
 });
+

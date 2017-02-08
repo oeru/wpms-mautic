@@ -3,14 +3,16 @@
 // see https://codex.wordpress.org/Creating_Options_Pages
 // and http://tutorialzine.com/2012/11/option-panel-wordpress-plugin-settings-api/
 
-
-
 class MauticSync {
 
     protected $data = array(
-        'mautic_url' => 'Your Mautic API URL (without /api)',
-        'mautic_public_key' => 'Mautic API Public Key',
-        'mautic_secret_key' => 'Mautic API Secret Key',
+        'mautic_url' => '',
+        'mautic_public_key' => '',
+        'mautic_secret_key' => '',
+        'mautic_auth_info' => false,
+        //'mautic_url' => 'Your Mautic API URL (without /api)',
+        //'mautic_public_key' => 'Mautic API Public Key',
+        //'mautic_secret_key' => 'Mautic API Secret Key',
     );
 
     public function __construct() {
@@ -39,9 +41,7 @@ class MauticSync {
             array('jquery'), true);
         // if we're on the Mautic page, add our CSS...
         if (preg_match('~\/' . preg_quote(MAUTIC_URL) . '\/?$~', $_SERVER['REQUEST_URI'])) {
-            // This will show the stylesheet in wp_head() in the app/index.php file
-            wp_enqueue_style('stylesheet', MAUTIC_URL.'app/assets/css/styles.css');
-    		// This will show the scripts in the footer
+    		    // This will show the scripts in the footer
             wp_enqueue_script('script', MAUTIC_URL.'app/assets/js/script.js', array('jquery'), false, true);
             require MAUTIC_PATH . 'app/index.php';
             exit;
@@ -79,6 +79,7 @@ class MauticSync {
     public function ajax_options_page() {
         $options = $this->get_options();
         $nonce_submit= wp_create_nonce('mautic-submit');
+        //$this->logger('creating form');
         ?>
         <div class="wrap" id="mautic_sync_ajax">
             <h2>Mautic Synchronisation Settings</h2>
@@ -105,7 +106,7 @@ class MauticSync {
                         <th scope="row">Mautic API Secret Key</th>
                         <td><input type="text" id="mautic-secret-key" name="mautic-secret-key"
                             value="<?php echo $options['mautic_secret_key']; ?>" style="width: 30em;" /><br/>
-                            <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long. Keep this one secret!</span>
+                            <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_KEY_SIZE ?> characters long.</span>
                         </td>
                     </tr>
                 </table>
@@ -113,6 +114,7 @@ class MauticSync {
                     <input type="submit" id="mautic-submit" class="button-primary" value="Save Changes" />
                     <input type="button" id="mautic-auth" class="button-secondary" value="Test Authentication" />
                     <input type="hidden" id="mautic-submit-nonce" value="<?php echo $nonce_submit; ?>" />
+                    <input type="hidden" id="mautic-auth-info" value="<?php echo $options['mautic_auth_info']; ?>" />
                 </p>
                 <p id="mautic-userstatus" style="color: red">&nbsp;</p>
             </form>
@@ -129,18 +131,22 @@ class MauticSync {
     }
 
     // the ajax form should only ever return valid options
-    public function save_valid_options() {
+    public function save_options() {
         if ($_POST && isset($_POST['url']) && isset($_POST['public_key']) && isset($_POST['secret_key'])) {
             // grab saved values from Ajax form
             $this->data['mautic_url'] = sanitize_text_field($_POST['url']);
             $this->data['mautic_public_key'] = sanitize_text_field($_POST['public_key']);
             $this->data['mautic_secret_key'] = sanitize_text_field($_POST['secret_key']);
+            // if these values are validated, then we can set auth_info to true
+            $this->data['mautic_auth_info'] = true;
+            $this->logger("data array: ".print_r($this->data, true));
             // save values
-            foreach ($this->data as $opion => $value) {
-                errorlog("updating $option to $value");
-                if (!update_option($option, $value, 'yes')) {
+            foreach ($this->data as $option => $value) {
+                $this->logger("updating $option to $value");
+                update_option($option, $value);
+                /*if (!update_option($option, $value)) {
                     return false;
-                }
+                }*/
             }
             return true;
         }
@@ -149,27 +155,56 @@ class MauticSync {
 
     // called when the ajax form is successfully submitted
     public function ajax_submit() {
-        // get the submitted parameters
-        $nonce = $_POST['nonce-submit'];
+        $this->logger('in ajax_submit: '.print_r($_POST, true));
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
-        if ( ! wp_verify_nonce( $nonce, 'submit-nonse') ) {
-            die ("Busted in submit!");
-        }
-
-        // otherwise, update the options
-        $success=false;
-        if ($this->save_valid_options()) {
-            $success=true;
-        }
+        if ( ! wp_verify_nonce( $_POST['nonce-submit'], 'mautic-submit-nonse') ) { 
+            die ("Busted in submit!"); }
+        
+        $this->logger("saving options");
 
         // generate the response
-        $response = json_encode( array( 'success' => $success ) );
-        // response output
         header( "Content-Type: application/json" );
-        echo $response;
+        $this->response(array('success'=> $this->save_options()));
         // IMPORTANT: don't forget to "exit"
         exit;
     }
+
+    // testing authentication against Mautic URL 
+    public function test_auth() {
+        $this->logger('testing auth with these details: '.print_r($this->data, true));
+        return true;
+    }
+
+    // for testing authentication with the provided details
+    public function ajax_auth() {
+        $this->logger('in ajax_auth: '.print_r($_POST, true));
+        // check if the submitted nonce matches the generated nonce created in the auth_init functionality
+        if ( ! wp_verify_nonce( $_POST['nonce-auth'], 'mautic-auth-nonse') ) {
+            die ("Busted in auth!"); }
+
+        $this->logger("testing authentication");
+
+        // generate the response
+        header( "Content-Type: application/json" );
+        $this->response(array('success'=> $this->test_auth()));
+        // IMPORTANT: don't forget to "exit"
+        exit;
+
+    }
+
+ 
+    private function response($a) {
+        echo json_encode($a);
+        die();
+    }
+  
+    private function logger($message) {
+        if (MAUTIC_DEBUG) {
+            error_log($message);
+        }
+    }
+
+
 /*
     public function ajax_auth() {
         // get the submitted parameters
@@ -190,13 +225,4 @@ class MauticSync {
         exit;
     }
 */
-/*    public function mautic_auth() {
-        require_once 'mautic-api-library/lib/MauticApi.php';
-
-        foreach($this->option_name as $key => $opt) {
-            echo "<p>$key: $opt\n</p>";
-        }
-
-        return true;
-    }*/
 }

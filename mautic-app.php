@@ -47,6 +47,8 @@ define('MAUTIC_URL', plugins_url("/", __FILE__));
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
 define('MAUTIC_KEY_SIZE', 50);
 define('MAUTIC_SLUG', 'mautic-sync');
+// turn on debugging with true, off with false
+define('MAUTIC_DEBUG', true);
 
 require MAUTIC_PATH . 'includes/mautic-sync.php';
 //require MAUTIC_PATH . 'includes/MauticAdmin.php';
