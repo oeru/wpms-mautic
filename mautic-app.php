@@ -28,7 +28,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-define( 'MAUTIC_VERSION', '0.1.4' );
+define( 'MAUTIC_VERSION', '0.1.5' );
 
 if ( !function_exists( 'add_action' ) ) {
 	echo 'This only works as a WordPress plugin.';
@@ -43,17 +43,17 @@ if ( !function_exists( 'add_action' ) ) {
 define('MAUTIC_FILE', __FILE__);
 define('MAUTIC_URL', plugins_url("/", __FILE__));
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
-define('MAUTIC_PUB_KEY_SIZE', 52);
-define('MAUTIC_PRIV_KEY_SIZE', 50);
+//define('MAUTIC_PUB_KEY_SIZE', 52);
+//define('MAUTIC_PRIV_KEY_SIZE', 50);
 define('MAUTIC_SLUG', 'mautic-sync');
 // turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
 
-require MAUTIC_PATH . 'includes/mautic-auth.php';
+//require MAUTIC_PATH . 'includes/mautic-auth.php';
 require MAUTIC_PATH . 'includes/mautic-sync.php';
 
 // include OAuth2 code for Mautic Authentication
-include MAUTIC_PATH . '/vendor/autoload.php';  
+include MAUTIC_PATH . '/vendor/autoload.php';
 use Mautic\Auth\ApiAuth;
 use Mautic\MauticApi;
 

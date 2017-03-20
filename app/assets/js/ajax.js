@@ -25,40 +25,27 @@ jQuery(document).ready(function() {
                 required: true,
                 url: true
             },
-            'mautic-public-key': {
+            'mautic-user': {
                 required: true,
-                rangelength: [50, 52]
             },
-            'mautic-secret-key': {
+            'mautic-password': {
                 required: true,
-                rangelength: [50, 50]
-            },
-            'mautic-callback-url': {
-                required: true,
-                url: true
             }
         },
         messages: {
             'mautic-url': {
-                required: "You must enter a valid web address (URL) for your Mautic API endpoint.",
-                url: "You must enter a valid web address (URL) for your Mautic API endpoint."
+                required: "You must enter a valid web address (URL) for your Mautic API endpoint."
             },
-            'mautic-public-key': {
-                required: "You must submit a 52 character public key from your Mautic API settings.",
-                rangelength: "Your key must be 52 characters (a combination of numbers, letters, and '_') long."
+            'mautic-user': {
+                required: "You must enter the username of a user able to access your Mautic API. (case sensitive)"
             },
-            'mautic-secret-key': {
-                required: "You must submit a 50 character secret key from your Mautic API settings.",
-                rangelength: "Your key must be 50 characters (a combination of numbers and letters) long."
-            },
-            'mautic-callback-url': {
-                required: "You must enter a valid web address (URL) for your callback.",
-                url: "You must enter a valid web address (URL) for your callback."
+            'mautic-password': {
+                required: "You must enter the password for the Mautic API user. (case sensitive)"
             }
         }
     });
 
-    // handle (re)load of the page 
+    // handle (re)load of the page
     $(window).on('load', function() {
         console.log('in load');
         $('#mautic-submit').attr('disabled', false);
@@ -69,7 +56,7 @@ jQuery(document).ready(function() {
     $('input').keypress( function (e) {
         c = e.which ? e.which : e.keyCode;
         console.log('input: ' + c);
-        if (c == 13) { 
+        if (c == 13) {
             $('#mautic-sync-form').submit();
             return false;
         }
@@ -89,9 +76,8 @@ jQuery(document).ready(function() {
                 //'do' : 'something',
                 'nonce-submit' : mautic_sync_ajax.submit_nonce,
                 'url' : $.trim($('#mautic-url').val()),
-                'public_key' : $.trim($('#mautic-public-key').val()),
-                'secret_key' : $.trim($('#mautic-secret-key').val()),
-                'callback_url' : $.trim($('#mautic-callback-url').val())
+                'user' : $.trim($('#mautic-user').val()),
+                'password' : $.trim($('#mautic-password').val())
             },
             success: function(data) {
                 // re-enable the submit button
@@ -138,7 +124,6 @@ jQuery(document).ready(function() {
             }
         });
         return false;
-    }); 
+    });
 
 });
-

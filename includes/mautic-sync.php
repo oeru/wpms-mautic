@@ -4,23 +4,13 @@
 // and http://tutorialzine.com/2012/11/option-panel-wordpress-plugin-settings-api/
 
 include MAUTIC_PATH . '/vendor/autoload.php';
-use Mautic\Auth\ApiAuth;
-use Mautic\MauticApi;
 
 class MauticSync {
 
     protected $settings = array(
         'mautic_url' => '', // set on admin screen
-        'mautic_public_key' => '', // set on admin screen
-        'mautic_secret_key' => '', // set on admin screen
-        'mautic_auth_info' => false, // set to true with valid settings entered
-        'mautic_callback_url' => '', // the same URL as specified in the API credentials
-        'mautic_version' => 'OAuth2', // default option
-        // post authentication
-        'mautic_access_token' => '', // set by authentication
-        'mautic_access_token_secret' => '', // set by authentication
-        'mautic_access_token_expires' => '', // set by authentication
-        'mautic_refresh_token' => '', // set by authentication
+        'mautic_user' => '', // set on admin screen
+        'mautic_password' => '', // set on admin screen
     );
 
     // register stuff when constructing this object instance
@@ -49,7 +39,7 @@ class MauticSync {
         // This will show the stylesheet in wp_head() in the app/index.php file
         wp_enqueue_style('stylesheet', MAUTIC_URL.'app/assets/css/styles.css');
         // registering for use elsewhere
-        wp_register_script('jquery-validate', 
+        wp_register_script('jquery-validate',
             'https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js',
             array('jquery'), true);
         // if we're on the Mautic page, add our CSS...
@@ -90,7 +80,7 @@ class MauticSync {
 
     // Print the menu page itself
     public function ajax_options_page() {
-        $options = $this->get_options();
+        $settings = $this->get_settings();
         $nonce_submit= wp_create_nonce('mautic-submit');
         //$this->logger('creating form');
         ?>
@@ -102,40 +92,32 @@ class MauticSync {
                     <tr valign="top">
                         <th scope="row">Mautic API Address (URL)</th>
                         <td><input type="text" id="mautic-url" name="mautic-url"
-                            value="<?php echo $options['mautic_url']; ?>" style="width: 30em;" /><br/>
-                            <span class="description">A valid web address for your Mautic instance including schema (http:// or https://) and path, e.g. /api.</span>
+                            value="<?php echo $settings['mautic_url']; ?>" style="width: 30em;" /><br/>
+                            <span class="description">A valid web address for your Mautic instance including schema (http:// or https://). The path "/api" will added automatically.</span>
                         </td>
                     </tr>
 
                     <tr valign="top">
-                        <th scope="row">Mautic API Public Key</th>
-                        <td><input type="text" id="mautic-public-key" name="mautic-public-key"
-                            value="<?php echo $options['mautic_public_key']; ?>" style="width: 30em;" /><br/>
-                            <span class="description">Should be a string of numbers and letters <?php echo MAUTIC_PUB_KEY_SIZE ?> characters long.</span>
+                        <th scope="row">Mautic User</th>
+                        <td><input type="text" id="mautic-user" name="mautic-user"
+                            value="<?php echo $options['mautic_user']; ?>" style="width: 30em;" /><br/>
+                            <span class="description">Username of user access to the Mautic API.</span>
                         </td>
                     </tr>
 
                     <tr valign="top">
-                        <th scope="row">Mautic API Secret Key</th>
-                        <td><input type="text" id="mautic-secret-key" name="mautic-secret-key"
-                            value="<?php echo $options['mautic_secret_key']; ?>" style="width: 30em;" /><br/>
-                            <span class="description">A string of numbers and letters <?php echo MAUTIC_PRIV_KEY_SIZE ?> characters long.</span>
+                        <th scope="row">Mautic Password</th>
+                        <td><input type="text" id="mautic-password" name="mautic-password"
+                            value="<?php echo $options['mautic_password']; ?>" style="width: 30em;" /><br/>
+                            <span class="description">Password for the above user: numbers, letters (mixed capitalisation), and special characters.</span>
                         </td>
                     </tr>
- 
-                    <tr valign="top">
-                        <th scope="row">Your App Callback URL</th>
-                        <td><input type="text" id="mautic-callback-url" name="mautic-callback-url"
-                            value="<?php echo $options['mautic_callback_url']; ?>" style="width: 30em;" /><br/>
-                            <span class="description">Your app's URL, visible to the Mautic API server, including schema (http:// or https://) and path.</span>
-                        </td>
-                    </tr>
+
                 </table>
                 <p class="submit">
                     <input type="submit" id="mautic-submit" class="button-primary" value="Save Changes" />
                     <input type="button" id="mautic-auth" class="button-secondary" value="Authenticate" />
                     <input type="hidden" id="mautic-submit-nonce" value="<?php echo $nonce_submit; ?>" />
-                    <input type="hidden" id="mautic-auth-info" value="<?php echo $options['mautic_auth_info']; ?>" />
                 </p>
                 <p id="mautic-userstatus" style="color: red">&nbsp;</p>
             </form>
@@ -144,7 +126,7 @@ class MauticSync {
     }
 
     // load saved options, if any
-    public function get_options() {
+    public function get_settings() {
         foreach ($this->settings as $option => $default) {
             $this->settings[$option] = ($saved = get_option($option)) ? $saved : $default;
         }
@@ -152,23 +134,17 @@ class MauticSync {
     }
 
     // the ajax form should only ever return valid options
-    public function save_options() {
-        if ($_POST && isset($_POST['url']) && isset($_POST['public_key']) && isset($_POST['secret_key'])) {
+    public function save_settings() {
+        if ($_POST && isset($_POST['url']) && isset($_POST['user']) && isset($_POST['password'])) {
             // grab saved values from Ajax form
             $this->settings['mautic_url'] = sanitize_text_field($_POST['url']);
-            $this->settings['mautic_public_key'] = sanitize_text_field($_POST['public_key']);
-            $this->settings['mautic_secret_key'] = sanitize_text_field($_POST['secret_key']);
-            $this->settings['mautic_callback_url'] = sanitize_text_field($_POST['callback_url']);
-            // if these values are validated, then we can set auth_info to true
-            $this->settings['mautic_auth_info'] = true;
+            $this->settings['mautic_user'] = sanitize_text_field($_POST['user']);
+            $this->settings['mautic_password'] = sanitize_text_field($_POST['password']);
             $this->logger("data array: ".print_r($this->settings, true));
             // save values
             foreach ($this->settings as $option => $value) {
                 $this->logger("updating $option to $value");
                 update_option($option, $value);
-                /*if (!update_option($option, $value)) {
-                    return false;
-                }*/
             }
             return true;
         }
@@ -179,72 +155,38 @@ class MauticSync {
     public function ajax_submit() {
         $this->logger('in ajax_submit: '.print_r($_POST, true));
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
-        if ( ! wp_verify_nonce( $_POST['nonce-submit'], 'mautic-submit-nonse') ) { 
+        if ( ! wp_verify_nonce( $_POST['nonce-submit'], 'mautic-submit-nonse') ) {
             die ("Busted in submit!"); }
-        
-        $this->logger("saving options");
+
+        $this->logger("saving settings");
 
         // generate the response
         header( "Content-Type: application/json" );
-        $this->response(array('success'=> $this->save_options()));
+        $this->response(array('success'=> $this->save_settings()));
         // IMPORTANT: don't forget to "exit"
         exit;
     }
 
-    // testing authentication against Mautic URL 
+    // testing authentication against Mautic URL
     public function authenticate() {
-        $this->get_options();  
+        $this->get_settings();
         //$this->logger('testing auth with these details: '.print_r($this->settings, true));
-        
-        session_name("oauthtester");
-        session_start();
-        
+
         $settings = array(
             'baseUrl' => $this->settings['mautic_url'],       // Base URL of the Mautic instance
-            'version' => $this->settings['mautic_version'], // Version of the OAuth can be OAuth2 or OAuth1a. OAuth2 is the default value.
-            'clientKey' => $this->settings['mautic_public_key'],       // Client/Consumer key from Mautic
-            'clientSecret' => $this->settings['mautic_secret_key'],       // Client/Consumer secret key from Mautic
-            'callback' => $this->settings['mautic_callback_url']        // Redirect URI/Callback URI for this script
+            'User' => $this->settings['mautic_user'],       // login username of Mautic user with API access
+            'Password' => $this->settings['mautic_password'],       // Mautic user password
         );
 
-        if (isset($this->settings['mautic_token']) && isset($this->settings['mautic_token_secret'])) {
-            $settings['accessToken'] = $this->settings['mautic_token'];
-            $settings['accessTokenSecret'] = $this->settings['mautic_token_secret'];
-        }
-
-        // Initiate the auth object
-        $auth = ApiAuth::initiate($settings);
-
-        //$this->logger('$auth (1) '. print_r($auth, true));
-      
-        if (isset($_SESSION['accessTokenData'])) { //todo read from more permanent
-            $auth->setAccessTokenDetails(json_decode($_SESSION['accessTokenData'], true));
-        }
-        
-        $this->logger('$auth (2) '. print_r($auth, true));
-
-        if ($auth->validateAccessToken()){
-            //echo '222<br>';
-            $this->logger('in validateAccessToken');
-            $accessTokenData = $auth->getAccessTokenData();
-            $_SESSION['accessTokenData'] = json_encode($accessTokenData); //todo save more permanently
-
-            if ($auth->accessTokenUpdated()) {
-                //echo '333<br>';
-                $accessTokenData = $auth->getAccessTokenData();
-
-                //store access token data however you want
-
-            }
-
+        if (1) {  // test authentication
             // testing stuff
             $leadApi = MauticApi::getContext("leads", $auth, $baseUrl .'/api/');
             $leads = $leadApi->getList();
             $this->logger( '$leads = ' . print_r($leads, true));
 
             return true;
-        }          
- 
+        }
+
         return false;
     }
 
@@ -265,12 +207,12 @@ class MauticSync {
 
     }
 
-    // construct JSON responses to AJAX queries 
+    // construct JSON responses to AJAX queries
     private function response($a) {
         echo json_encode($a);
         die();
     }
-  
+
     // log things to the web server log
     private function logger($message) {
         if (MAUTIC_DEBUG) {
