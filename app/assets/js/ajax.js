@@ -27,11 +27,15 @@ jQuery(document).ready(function() {
             },
             'mautic-public-key': {
                 required: true,
-                rangelength: [50, 50]
+                rangelength: [50, 52]
             },
             'mautic-secret-key': {
                 required: true,
                 rangelength: [50, 50]
+            },
+            'mautic-callback-url': {
+                required: true,
+                url: true
             }
         },
         messages: {
@@ -40,12 +44,16 @@ jQuery(document).ready(function() {
                 url: "You must enter a valid web address (URL) for your Mautic API endpoint."
             },
             'mautic-public-key': {
-                required: "You must submit a 50 character public key from your Mautic API settings.",
-                rangelength: "Your key must be 50 characters (a combination of numbers and letters) long."
+                required: "You must submit a 52 character public key from your Mautic API settings.",
+                rangelength: "Your key must be 52 characters (a combination of numbers, letters, and '_') long."
             },
             'mautic-secret-key': {
                 required: "You must submit a 50 character secret key from your Mautic API settings.",
                 rangelength: "Your key must be 50 characters (a combination of numbers and letters) long."
+            },
+            'mautic-callback-url': {
+                required: "You must enter a valid web address (URL) for your callback.",
+                url: "You must enter a valid web address (URL) for your callback."
             }
         }
     });
@@ -71,20 +79,19 @@ jQuery(document).ready(function() {
     $('#mautic-sync-form').submit(function() {
         // disable the submit button until it returns.
         $('#mautic-submit').attr('disabled', true);
-       $('#mautic-userstatus').html('Processing...');
-       $.ajax({
-
+        $('#mautic-userstatus').html('Processing...');
+        $.ajax({
             type: 'POST',
             dataType: 'json',
             url: mautic_sync_ajax.ajaxurl,
             data: {
                 'action': 'mautic_submit',
-                'do' : 'something',
+                //'do' : 'something',
                 'nonce-submit' : mautic_sync_ajax.submit_nonce,
-                'nonce-auth' : mautic_sync_ajax.auth_nonce,
                 'url' : $.trim($('#mautic-url').val()),
                 'public_key' : $.trim($('#mautic-public-key').val()),
-                'secret_key' : $.trim($('#mautic-secret-key').val())
+                'secret_key' : $.trim($('#mautic-secret-key').val()),
+                'callback_url' : $.trim($('#mautic-callback-url').val())
             },
             success: function(data) {
                 // re-enable the submit button
@@ -104,6 +111,34 @@ jQuery(document).ready(function() {
         // if nothing else returns this first, there was a problem...
         return false;
     });
+
+    // process the authentication test
+    $('#mautic-auth').click(function() {
+        $('#mautic-submit').attr('disabled', true);
+        $('#mautic-userstatus').html('Authenticating...');
+        $.ajax({
+            type: 'POST',
+            dataType: 'json',
+            url: mautic_sync_ajax.ajaxurl,
+            data: {
+                'action': 'mautic_auth',
+                //'do' : 'something',
+                'nonce-auth' : mautic_sync_ajax.auth_nonce
+            },
+            success: function(data) {
+                $('#mautic-submit').attr('disabled', false);
+                $('#mautic-userstatus').html('Authenticated...');
+                console.log('Success: data: ', data);
+                return true;
+            },
+            failure: function() {
+                console.log('Failure: data: ', data);
+                $('#mautic-submit').attr('disabled', false);
+                $('#mautic-userstatus').text('Authentication Failed.');
+            }
+        });
+        return false;
+    }); 
 
 });
 

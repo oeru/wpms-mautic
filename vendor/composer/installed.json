@@ -50,17 +50,17 @@
     },
     {
         "name": "mautic/api-library",
-        "version": "2.4.0",
-        "version_normalized": "2.4.0.0",
+        "version": "2.6.0",
+        "version_normalized": "2.6.0.0",
         "source": {
             "type": "git",
             "url": "https://github.com/mautic/api-library.git",
-            "reference": "7d3e676a6f9ccf0e76f6d7fa1b937dd80887ab94"
+            "reference": "ea49a7e50cce3b59f85f2794c366c44e622e80f1"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/mautic/api-library/zipball/7d3e676a6f9ccf0e76f6d7fa1b937dd80887ab94",
-            "reference": "7d3e676a6f9ccf0e76f6d7fa1b937dd80887ab94",
+            "url": "https://api.github.com/repos/mautic/api-library/zipball/ea49a7e50cce3b59f85f2794c366c44e622e80f1",
+            "reference": "ea49a7e50cce3b59f85f2794c366c44e622e80f1",
             "shasum": ""
         },
         "require": {
@@ -72,7 +72,7 @@
             "phpunit/phpunit": "~4.8|~5.0",
             "raveren/kint": "~0.9"
         },
-        "time": "2016-12-12 18:46:58",
+        "time": "2017-02-15 08:14:30",
         "type": "library",
         "installation-source": "dist",
         "autoload": {

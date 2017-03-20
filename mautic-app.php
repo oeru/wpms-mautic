@@ -35,23 +35,28 @@ if ( !function_exists( 'add_action' ) ) {
 	exit;
 }
 
-if ( !is_multisite() ) {
+/*if ( !is_multisite() ) {
     echo "This plugin is only useful with a multi-site implementation.";
     exit;
-}
-//add_shortcode( 'WEnotes', 'wenotes_func' );
-//add_shortcode( 'WEnotesPost', 'wenotespost' );
+}*/
 
 define('MAUTIC_FILE', __FILE__);
 define('MAUTIC_URL', plugins_url("/", __FILE__));
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
-define('MAUTIC_KEY_SIZE', 50);
+define('MAUTIC_PUB_KEY_SIZE', 52);
+define('MAUTIC_PRIV_KEY_SIZE', 50);
 define('MAUTIC_SLUG', 'mautic-sync');
 // turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
 
+require MAUTIC_PATH . 'includes/mautic-auth.php';
 require MAUTIC_PATH . 'includes/mautic-sync.php';
-//require MAUTIC_PATH . 'includes/MauticAdmin.php';
 
+// include OAuth2 code for Mautic Authentication
+include MAUTIC_PATH . '/vendor/autoload.php';  
+use Mautic\Auth\ApiAuth;
+use Mautic\MauticApi;
+
+// fire things up
 new MauticSync();
 ?>

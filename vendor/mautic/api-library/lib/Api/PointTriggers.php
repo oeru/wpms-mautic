@@ -21,6 +21,23 @@ class PointTriggers extends Api
     protected $endpoint = 'points/triggers';
 
     /**
+     * {@inheritdoc}
+     */
+    protected $listName = 'triggers';
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $itemName = 'trigger';
+
+    /**
+     * {@inheritdoc}
+     */
+    protected $searchCommands = array(
+        'ids',
+    );
+
+    /**
      * Remove events from a point trigger
      *
      * @param integer $triggerId
