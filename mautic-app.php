@@ -10,6 +10,7 @@ Version: 0.1.0
 Author: Dave Lane
 Author URI: https://davelane.nz
 License: GPLv2 or later
+Network: true
 */
 
 /*
@@ -28,18 +29,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-define( 'MAUTIC_VERSION', '0.1.5' );
-
-if ( !function_exists( 'add_action' ) ) {
-	echo 'This only works as a WordPress plugin.';
-	exit;
-}
-
-/*if ( !is_multisite() ) {
-    echo "This plugin is only useful with a multi-site implementation.";
-    exit;
-}*/
-
+define('MAUTIC_VERSION', '0.2.0');
 define('MAUTIC_FILE', __FILE__);
 define('MAUTIC_URL', plugins_url("/", __FILE__));
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
@@ -49,14 +39,20 @@ define('MAUTIC_SLUG', 'mautic-sync');
 // turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
 
-//require MAUTIC_PATH . 'includes/mautic-auth.php';
-require MAUTIC_PATH . 'includes/mautic-sync.php';
-
-// include OAuth2 code for Mautic Authentication
+// include Mautic API and Auth code
 include MAUTIC_PATH . '/vendor/autoload.php';
-use Mautic\Auth\ApiAuth;
-use Mautic\MauticApi;
+// the rest of the app
+require MAUTIC_PATH . 'includes/mautic-sync.php';
+//require MAUTIC_PATH . 'includes/mautic-auth.php';
 
-// fire things up
-new MauticSync();
+/**
+ * Start the plugin only if in Admin side and if site is Multisite
+ * see http://stackoverflow.com/questions/13960514/how-to-adapt-my-plugin-to-multisite/
+ */
+if (is_admin() && is_multisite()) {
+    add_action('plugins_loaded',
+        array(MauticSync::get_instance(), 'init')
+    );
+}
+
 ?>

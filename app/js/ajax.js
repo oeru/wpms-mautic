@@ -4,32 +4,22 @@
 jQuery(document).ready(function() {
     console.log('mautic-sync-ajax', mautic_sync_ajax);
 
-    var $ = jQuery, auth_info = $.trim($('#mautic-auth-info').val());
+    var $ = jQuery;
 
-    auth_info = (auth_info == '1') ? true : false;
-
-    console.log('auth_info = '+auth_info);
-
-    // if auth_info is recorded, this is true
-    $('#mautic-auth').prop('disabled', !auth_info);
     $('#mautic-userstatus').text('Ready...');
 
     $('#mautic-sync-form').validate({
-        /*submitHandler: function(form) {
-            //console.log('you just submitted the form in the validator');
-            //$(form).ajaxSubmit();
-        },*/
         validClass: "valid",
-       rules: {
+        rules: {
             'mautic-url': {
                 required: true,
                 url: true
             },
             'mautic-user': {
-                required: true,
+                required: true
             },
             'mautic-password': {
-                required: true,
+                required: true
             }
         },
         messages: {
@@ -73,7 +63,6 @@ jQuery(document).ready(function() {
             url: mautic_sync_ajax.ajaxurl,
             data: {
                 'action': 'mautic_submit',
-                //'do' : 'something',
                 'nonce-submit' : mautic_sync_ajax.submit_nonce,
                 'url' : $.trim($('#mautic-url').val()),
                 'user' : $.trim($('#mautic-user').val()),
@@ -81,7 +70,6 @@ jQuery(document).ready(function() {
             },
             success: function(data) {
                 // re-enable the submit button
-                console.log('Set auth_info = true');
                 $('#mautic-submit').attr('disabled', false);
                 $('#mautic-auth').attr('disabled', false);
                 $('#mautic-userstatus').html('Saved...');
@@ -100,7 +88,7 @@ jQuery(document).ready(function() {
 
     // process the authentication test
     $('#mautic-auth').click(function() {
-        $('#mautic-submit').attr('disabled', true);
+        $('#mautic-submit').attr('disabled', false);
         $('#mautic-userstatus').html('Authenticating...');
         $.ajax({
             type: 'POST',
@@ -113,7 +101,7 @@ jQuery(document).ready(function() {
             },
             success: function(data) {
                 $('#mautic-submit').attr('disabled', false);
-                $('#mautic-userstatus').html('Authenticated...');
+                $('#mautic-userstatus').html('Successfully authenticated!');
                 console.log('Success: data: ', data);
                 return true;
             },
@@ -125,5 +113,4 @@ jQuery(document).ready(function() {
         });
         return false;
     });
-
 });

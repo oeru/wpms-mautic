@@ -8,15 +8,17 @@ It needs to be possible to do quick review of disparities between WP
 Users/Network associations and Mautic Contacts/Segment associations,
 including automatic updates based on
 
-* provide basic statistics
-** number of WP Users, number of Mautic Contacts, number matched
-** number of WP Network Sites, number of Mautic Segments, number matched
-
 * set access to a Mautic site API via the Basic Authentication -
 ** a WP user with Administration rights enters a Mautic site URL, username,
 and password.
 ** on saving it, WP tests the connection for a valid response from the Mautic
 site to verify access
+
+* create a separate page/tab for administration of Users/Contacts
+
+* provide basic statistics
+** number of WP Users, number of Mautic Contacts, number matched
+** number of WP Network Sites, number of Mautic Segments, number matched
 
 * get a list of current WP Users and Mautic Contacts, matched on email.
 
@@ -41,8 +43,8 @@ site to verify access
 Segment if doesn't exist, create Contact if doesn't exist)
 
 * automatic updates to WP based on Mautic changes
-** if a User requests to be taken off a Mautic Segment, mark "disabled" and
-respect
+** if a User requests to be taken off a Mautic Segment, mark "dnc"
+(do not contact) and respect this
 ** if a User requests to be removed as a Mautic Contact, mark "removed"
 
 * automatic updates to Mautic based on WP changes
