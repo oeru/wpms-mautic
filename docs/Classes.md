@@ -14,20 +14,14 @@ Manages the configuration Mautic authentication (via Basic Auth) and testing
 it against the remote Mautic instance. Provides the admin interface and the
 testing capabilities.
 
-==MauticAdmin==
+==MauticWP==
 
 This draws together information related to WordPress Users and the Networks
 with which they're and their counterparts in Mautic's Contacts and Segments.
 
+==MauticClient==
 
-
-==WordPressUsers==
-
-==MauticContacts==
-
-==WordPressNetworks==
-
-==MauticSegments==
+Integrates MauticAuth to make calls to the Mautic API...
 
 ==Misc==
 

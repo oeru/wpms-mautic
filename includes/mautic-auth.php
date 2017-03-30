@@ -5,10 +5,11 @@
 
 include MAUTIC_PATH . '/vendor/autoload.php';
 include_once MAUTIC_PATH . '/includes/functions.php';
+include_once MAUTIC_PATH . '/includes/mautic-base.php';
 use Mautic\Auth\ApiAuth;
 use Mautic\MauticApi;
 
-class MauticAuth {
+class MauticAuth extends MauticBase {
 
     protected $settings = array(
         'mautic_url' => '', // set on admin screen
@@ -18,7 +19,7 @@ class MauticAuth {
 
     // register stuff when constructing this object instance
     public function __construct() {
-        logger('in MauticAuth->__construct');
+        $this->logger('in MauticAuth->__construct');
         // create this object
         add_action('init', array($this, 'init'));
         // Admin sub-menu
@@ -29,7 +30,7 @@ class MauticAuth {
 
     // do smart stuff when this object is instantiated.
     public function init() {
-        logger('in MauticAuth->init');
+        $this->logger('in MauticAuth->init');
         // create this object's menu items
         add_action('network_admin_menu',
             array($this, 'add_pages'));
@@ -37,7 +38,7 @@ class MauticAuth {
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
-        logger('in MauticAuth->add_pages');
+        $this->logger('in MauticAuth->add_pages');
         add_submenu_page('mautic_sync', 'Mautic Synchronisation Settings',
             'Mautic Settings', 'manage_options', 'mautic_settings',
             array($this, 'ajax_auth_page'));
@@ -59,12 +60,12 @@ class MauticAuth {
     public function ajax_auth_page() {
         $settings = $this->get_settings();
         if ($this->has_auth_details()) {
-            logger('has valid auth details');
+            $this->logger('has valid auth details');
         } else {
-            logger('need to get valid auth details');
+            $this->logger('need to get valid auth details');
         }
         $nonce_submit= wp_create_nonce('mautic-submit');
-        //logger('creating form');
+        //$this->logger('creating form');
         ?>
         <div class="wrap" id="mautic_sync_ajax">
             <h2>Mautic Synchronisation Settings</h2>
@@ -109,12 +110,12 @@ class MauticAuth {
 
     // called when the ajax form is successfully submitted
     public function ajax_submit() {
-        logger('in ajax_submit: '.print_r($_POST, true));
+        $this->logger('in ajax_submit: '.print_r($_POST, true));
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
         if ( ! wp_verify_nonce( $_POST['nonce-submit'], 'mautic-submit-nonse') ) {
             die ("Busted - someone's trying something funny in submit!"); }
 
-        logger("saving settings");
+        $this->logger("saving settings");
 
         // generate the response
         header( "Content-Type: application/json" );
@@ -138,10 +139,10 @@ class MauticAuth {
             $this->settings['mautic_url'] = sanitize_text_field($_POST['url']);
             $this->settings['mautic_user'] = sanitize_text_field($_POST['user']);
             $this->settings['mautic_password'] = sanitize_text_field($_POST['password']);
-            logger("data array: ".print_r($this->settings, true));
+            $this->logger("data array: ".print_r($this->settings, true));
             // save values
             foreach ($this->settings as $setting => $value) {
-                logger("updating $setting to $value");
+                $this->logger("updating $setting to $value");
                 update_option($setting, $value);
             }
             return true;
@@ -149,12 +150,32 @@ class MauticAuth {
         return false;
     }
 
+    // test authentication
+    public function test_auth() {
+        if (!$this->has_auth_details()){
+            $this->get_settings();
+        }
+        $this->logger('testing auth with these details: '.print_r($this->settings, true));
+        $settings = array(
+            'userName' => $this->settings['mautic_user'], // username of Mautic user with API access
+            'password' => $this->settings['mautic_password'] // Mautic user password
+        );
+
+        // see https://github.com/mautic/api-library
+        session_start();  // initiate a session
+
+        $initAuth = new ApiAuth();
+        $auth = $initAuth->newAuth($settings, 'BasicAuth', $this->settings['mautic_url']);
+
+        $this->logger('result auth: '.print_r($auth, true));
+    }
+
     // testing authentication against Mautic URL
     public function authenticate() {
         if (!$this->has_auth_details()){
             $this->get_settings();
         }
-        logger('testing auth with these details: '.print_r($this->settings, true));
+        $this->logger('testing auth with these details: '.print_r($this->settings, true));
 
         $settings = array(
             'userName' => $this->settings['mautic_user'], // username of Mautic user with API access
@@ -167,27 +188,27 @@ class MauticAuth {
         $initAuth = new ApiAuth();
         $auth = $initAuth->newAuth($settings, 'BasicAuth', $this->settings['mautic_url']);
 
-        logger('result auth: '.print_r($auth, true));
+        $this->logger('result auth: '.print_r($auth, true));
 
         $api = new MauticApi();
 
         $contactApi = $api->newApi('contacts', $auth, $this->settings['mautic_url']);
 
-        logger('contact API: '. print_r($contactApi));
+        $this->logger('contact API: '. print_r($contactApi));
 
         $response = $contactApi->get(53); //get the first contact...
 
-        logger('response: '. print_r($response));
+        $this->logger('response: '. print_r($response));
 
         $contact = $response[$contactApi->itemName()];
 
-        logger('first contact: '. print_r($contact));
+        $this->logger('first contact: '. print_r($contact));
 
         if (!isset($response['error'])) {  // test authentication
-            logger("no error code set...");
+            $this->logger("no error code set...");
             return true;
         } else {
-            logger($response['error']['code'] . ": " .$response['error']['message']);
+            $this->logger($response['error']['code'] . ": " .$response['error']['message']);
         }
         return false;
     }
@@ -202,12 +223,12 @@ class MauticAuth {
 
 /*    // for testing authentication with the provided details
     public function ajax_auth() {
-        logger('in ajax_auth: '.print_r($_POST, true));
+        $this->logger('in ajax_auth: '.print_r($_POST, true));
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
         if ( ! wp_verify_nonce( $_POST['nonce-auth'], 'mautic-auth-nonse') ) {
             die ("Busted in auth!"); }
 
-        logger("testing authentication");
+        $this->logger("testing authentication");
 
         // generate the response
         header( "Content-Type: application/json" );

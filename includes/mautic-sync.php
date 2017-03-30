@@ -1,28 +1,30 @@
 <?php
 
 include_once MAUTIC_PATH . '/includes/functions.php';
+include_once MAUTIC_PATH . '/includes/mautic-base.php';
 include_once MAUTIC_PATH . '/includes/mautic-auth.php';
+include_once MAUTIC_PATH . '/includes/mautic-client.php';
 
-class MauticSync {
+class MauticSync extends MauticBase {
 
-    protected static $instance = NULL;
-    protected $auth;  // Auth object that allows access to the Mautic API
+    protected static $instance = NULL; // this instance
+    protected $auth; // Auth object that allows access to the Mautic API
+    protected $mautic; // Mautic API client object
+
+    // register stuff when constructing this object instance
+    public function __construct() {
+        $this->logger('in construct');
+    }
 
     // returns an instance of this class if called, instantiating if necessary
     public static function get_instance() {
-        logger('in MauticSync->get_instance');
         NULL === self::$instance and self::$instance = new self;
         return self::$instance;
     }
 
-    // register stuff when constructing this object instance
-    public function __construct() {
-        logger('in MauticSync->__construct');
-    }
-
     // do smart stuff when this object is instantiated.
     public function init() {
-        logger('MauticSync->init');
+        $this->logger('in init');
         // also call the admin_init
         add_action('admin_init', array($this, 'admin_init'));
         // Deactivation plugin
@@ -41,17 +43,18 @@ class MauticSync {
             exit;
         }
 
-        //logger('in MauticSync init...');
+        //$this->logger('in MauticSync init...');
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_pages'));
 
         // create other necessary objects
         $this->auth = new MauticAuth();
+        $this->mautic = new MauticClient($this->auth);
     }
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
-        logger('in MauticSync->add_pages');
+        $this->logger('in MauticSync->add_pages');
         // no op right now....
         add_menu_page('Mautic Synchronisation', 'Mautic Sync',
             'manage_options', 'mautic_sync', array($this, 'ajax_page'));
@@ -59,7 +62,7 @@ class MauticSync {
 
     // White list our options using the Settings API
     public function admin_init() {
-        logger('in MauticSync->admin_init');
+        $this->logger('in MauticSync->admin_init');
         wp_enqueue_script( 'jquery-validate');
         // embed the javascript file that makes the AJAX request
         wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/ajax.js', array(
@@ -77,7 +80,7 @@ class MauticSync {
 
     // Print the menu page itself
     public function ajax_page() {
-        logger('ajax_page');
+        $this->logger('ajax_page');
         $wp_stats = wp_get_stats();
         $m_stats = $this->auth->get_stats();
         ?>
