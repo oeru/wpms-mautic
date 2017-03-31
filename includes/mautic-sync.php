@@ -13,7 +13,7 @@ class MauticSync extends MauticBase {
 
     // register stuff when constructing this object instance
     public function __construct() {
-        $this->logger('in construct');
+        $this->log('in construct');
     }
 
     // returns an instance of this class if called, instantiating if necessary
@@ -24,7 +24,7 @@ class MauticSync extends MauticBase {
 
     // do smart stuff when this object is instantiated.
     public function init() {
-        $this->logger('in init');
+        $this->log('in init');
         // also call the admin_init
         add_action('admin_init', array($this, 'admin_init'));
         // Deactivation plugin
@@ -43,7 +43,7 @@ class MauticSync extends MauticBase {
             exit;
         }
 
-        //$this->logger('in MauticSync init...');
+        //$this->log('in MauticSync init...');
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_pages'));
 
@@ -54,7 +54,7 @@ class MauticSync extends MauticBase {
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
-        $this->logger('in MauticSync->add_pages');
+        $this->log('in MauticSync->add_pages');
         // no op right now....
         add_menu_page('Mautic Synchronisation', 'Mautic Sync',
             'manage_options', 'mautic_sync', array($this, 'ajax_page'));
@@ -62,7 +62,7 @@ class MauticSync extends MauticBase {
 
     // White list our options using the Settings API
     public function admin_init() {
-        $this->logger('in MauticSync->admin_init');
+        $this->log('in MauticSync->admin_init');
         wp_enqueue_script( 'jquery-validate');
         // embed the javascript file that makes the AJAX request
         wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/ajax.js', array(
@@ -80,9 +80,9 @@ class MauticSync extends MauticBase {
 
     // Print the menu page itself
     public function ajax_page() {
-        $this->logger('ajax_page');
+        $this->log('ajax_page');
         $wp_stats = wp_get_stats();
-        $m_stats = $this->auth->get_stats();
+        $m_stats = $this->mautic->get_stats();
         ?>
         <div class="wrap" id="mautic_sync_ajax">
             <h2>Mautic Synchronisation</h2>

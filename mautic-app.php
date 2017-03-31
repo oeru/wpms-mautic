@@ -36,6 +36,7 @@ define('MAUTIC_PATH', plugin_dir_path(__FILE__));
 //define('MAUTIC_PUB_KEY_SIZE', 52);
 //define('MAUTIC_PRIV_KEY_SIZE', 50);
 define('MAUTIC_SLUG', 'mautic-sync');
+define('MAUTIC_API_ENDPOINT', 'api');
 // turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
 
@@ -54,5 +55,3 @@ if (is_admin() && is_multisite()) {
         array(MauticSync::get_instance(), 'init')
     );
 }
-
-?>
