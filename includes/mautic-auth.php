@@ -17,6 +17,8 @@ class MauticAuth extends MauticBase {
         'mautic_password' => '', // set on admin screen
     );
 
+    protected $auth; // an auth object
+
     // register stuff when constructing this object instance
     public function __construct() {
         $this->log('in MauticAuth->__construct');
@@ -24,6 +26,7 @@ class MauticAuth extends MauticBase {
         add_action('init', array($this, 'init'));
         // Admin sub-menu
         add_action('admin_init', array($this, 'admin_init'));
+        $this->log('finished adding admin_init');
         // Deactivation plugin
         register_deactivation_hook(MAUTIC_FILE, array($this, 'deactivate'));
     }
@@ -34,18 +37,21 @@ class MauticAuth extends MauticBase {
         // create this object's menu items
         add_action('network_admin_menu',
             array($this, 'add_pages'));
+        $this->log('in MauticAuth->init (done)');
     }
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
         $this->log('in MauticAuth->add_pages');
-        add_submenu_page('mautic_sync', 'Mautic Synchronisation Settings',
-            'Mautic Settings', 'manage_options', 'mautic_settings',
+        add_submenu_page(MAUTIC_SLUG, MAUTIC_ADMIN_TITLE,
+            MAUTIC_ADMIN_MENU, 'manage_options', MAUTIC_ADMIN_SLUG,
             array($this, 'ajax_auth_page'));
+        $this->log('in MauticAuth->add_pages (done)');
     }
 
     // White list our options using the Settings API
     public function admin_init() {
+        $this->log('in MauticAuth->admin_init');
         // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
         wp_localize_script( 'mautic-ajax-request', 'mautic_sync_ajax', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
@@ -53,7 +59,6 @@ class MauticAuth extends MauticBase {
             'auth_nonce' => wp_create_nonce( 'mautic-auth-nonse'),
         ));
         add_action( 'wp_ajax_mautic_submit', array($this, 'ajax_submit'));
-        //add_action( 'wp_ajax_mautic_auth', array($this, 'ajax_auth'));
     }
 
     // Print the menu page itself
@@ -140,20 +145,27 @@ class MauticAuth extends MauticBase {
             $this->settings['mautic_url'] = $url;
             $this->settings['mautic_user'] = sanitize_text_field($_POST['user']);
             $this->settings['mautic_password'] = sanitize_text_field($_POST['password']);
-            $this->log("data array: ".print_r($this->settings, true));
+            //$this->log("data array: ".print_r($this->settings, true));
             // save values
             foreach ($this->settings as $setting => $value) {
-                $this->log("updating $setting to $value");
+            //    $this->log("updating $setting to $value");
                 update_option($setting, $value);
             }
             if ($this->test_auth()) {
                 $this->log('successful auth!');
-                return true;
+                $this->response(array(
+                    'success' => true,
+                    'message' => 'Credentials successfully tested and saved.'));
             } else {
                 $this->log('auth failed!');
+                //wp_send_json_error('Authentication failed! One or both of your credentials are wrong, end point is incorrect, or it is not available.');
+                $this->response(array(
+                    //'error' => true,
+                    'success' => true,
+                    'message' => 'Settings saved, but authentication failed! One or both of your credentials are wrong, or the API is incorrect or not available.'));
             }
         }
-        return false;
+        return true;
     }
 
     // test authentication
@@ -178,6 +190,7 @@ class MauticAuth extends MauticBase {
             $this->log("We're in error: ".print_r($results['error'], true));
             return false;
         }
+
         if ($results['total']) {
             $this->log('success: total contacts = '.$results['total']);
             $this->auth = $auth;
@@ -193,23 +206,6 @@ class MauticAuth extends MauticBase {
         }
     }
 
-/*    // for testing authentication with the provided details
-    public function ajax_auth() {
-        $this->log('in ajax_auth: '.print_r($_POST, true));
-        // check if the submitted nonce matches the generated nonce created in the auth_init functionality
-        if ( ! wp_verify_nonce( $_POST['nonce-auth'], 'mautic-auth-nonse') ) {
-            die ("Busted in auth!"); }
-
-        $this->log("testing authentication");
-
-        // generate the response
-        header( "Content-Type: application/json" );
-        $this->response(array('success'=> $this->authenticate()));
-        // IMPORTANT: don't forget to "exit"
-        exit;
-
-    }
-*/
     // return the Auth details in a form that can be passed to the
     // Mautic API Authentication object
     public function get_auth_details() {
@@ -223,6 +219,26 @@ class MauticAuth extends MauticBase {
             'AuthMethod' => 'BasicAuth' // the auth method
         );
         return $settings;
+    }
+
+    // for convenience in working with Mautic's API, get the URL by itself.
+    public function get_url() {
+        if (!$this->has_auth_details()) {
+            $this->get_settings();
+        }
+        return $this->settings['mautic_url'];
+    }
+
+    // for convenience, return the auth object
+    public function get_auth() {
+        // is this a valid AuthInterface object?
+        if ($this->auth instanceof AuthInterface) {
+            $this->log('checking whether this is an AuthInterface');
+            return $this->auth;
+        }
+        $this->log('NOT an instance of AuthInterface');
+        // otherwise it's not set yet.
+        return false;
     }
 
     // are the auth details set and held by the object

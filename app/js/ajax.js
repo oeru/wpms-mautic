@@ -69,48 +69,28 @@ jQuery(document).ready(function() {
                 'password' : $.trim($('#mautic-password').val())
             },
             success: function(data) {
-                // re-enable the submit button
-                $('#mautic-submit').attr('disabled', false);
-                $('#mautic-auth').attr('disabled', false);
-                $('#mautic-userstatus').html('Saved...');
+                var msg = '';
                 console.log('Success: data: ', data);
+                if (data.hasOwnProperty('success')) {
+                    // strip links out
+                    msg = data.message.replace(/<a[^>]*>[^<]*<\/a>/g, '');
+                    console.log('Success msg', msg);
+                    $('#mautic-submit').attr('disabled', false);
+                    $('#mautic-userstatus').html(msg);
+                } else if (data.hasOwnProperty('error')) {
+                    msg = data.message;
+                    console.log('message:', msg);
+                    $('#mautic-submit').attr('disabled', false);
+                    $('#mautic-userstatus').html(msg);
+                }
                 return true;
             },
             failure: function() {
                 console.log('Failure: data: ', data);
-                $('#mautic-auth').attr('disabled', true);
                 $('#mautic-userstatus').text('Error!');
             }
         });
         // if nothing else returns this first, there was a problem...
-        return false;
-    });
-
-    // process the authentication test
-    $('#mautic-auth').click(function() {
-        $('#mautic-submit').attr('disabled', false);
-        $('#mautic-userstatus').html('Authenticating...');
-        $.ajax({
-            type: 'POST',
-            dataType: 'json',
-            url: mautic_sync_ajax.ajaxurl,
-            data: {
-                'action': 'mautic_auth',
-                //'do' : 'something',
-                'nonce-auth' : mautic_sync_ajax.auth_nonce
-            },
-            success: function(data) {
-                $('#mautic-submit').attr('disabled', false);
-                $('#mautic-userstatus').html('Successfully authenticated!');
-                console.log('Success: data: ', data);
-                return true;
-            },
-            failure: function() {
-                console.log('Failure: data: ', data);
-                $('#mautic-submit').attr('disabled', false);
-                $('#mautic-userstatus').text('Authentication Failed.');
-            }
-        });
         return false;
     });
 });

@@ -8,8 +8,8 @@ include_once MAUTIC_PATH . '/includes/mautic-client.php';
 class MauticSync extends MauticBase {
 
     protected static $instance = NULL; // this instance
-    protected $auth; // Auth object that allows access to the Mautic API
-    protected $mautic; // Mautic API client object
+    //protected $auth; // Auth object that allows access to the Mautic API
+    protected static $mautic; // Mautic API client object
 
     // register stuff when constructing this object instance
     public function __construct() {
@@ -48,16 +48,17 @@ class MauticSync extends MauticBase {
         add_action('network_admin_menu', array($this, 'add_pages'));
 
         // create other necessary objects
-        $this->auth = new MauticAuth();
-        $this->mautic = new MauticClient($this->auth);
+        //$auth = new MauticAuth();
+        //$this->mautic = new MauticClient($auth);
+        $this->mautic = new MauticClient();
     }
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
         $this->log('in MauticSync->add_pages');
         // no op right now....
-        add_menu_page('Mautic Synchronisation', 'Mautic Sync',
-            'manage_options', 'mautic_sync', array($this, 'ajax_page'));
+        add_menu_page(MAUTIC_TITLE, MAUTIC_MENU,
+            'manage_options', MAUTIC_SLUG, array($this, 'ajax_page'));
     }
 
     // White list our options using the Settings API

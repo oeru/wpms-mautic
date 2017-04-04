@@ -35,7 +35,12 @@ define('MAUTIC_URL', plugins_url("/", __FILE__));
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
 //define('MAUTIC_PUB_KEY_SIZE', 52);
 //define('MAUTIC_PRIV_KEY_SIZE', 50);
-define('MAUTIC_SLUG', 'mautic-sync');
+define('MAUTIC_SLUG', 'mautic_sync');
+define('MAUTIC_TITLE', 'Mautic Synchronisation');
+define('MAUTIC_MENU', 'Mautic Sync');
+define('MAUTIC_ADMIN_SLUG', 'mautic_settings');
+define('MAUTIC_ADMIN_TITLE', 'Mautic Synchronisation Settings');
+define('MAUTIC_ADMIN_MENU', 'Mautic Sync Settings');
 define('MAUTIC_API_ENDPOINT', 'api');
 // turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
@@ -44,7 +49,6 @@ define('MAUTIC_DEBUG', true);
 include MAUTIC_PATH . '/vendor/autoload.php';
 // the rest of the app
 require MAUTIC_PATH . 'includes/mautic-sync.php';
-//require MAUTIC_PATH . 'includes/mautic-auth.php';
 
 /**
  * Start the plugin only if in Admin side and if site is Multisite
