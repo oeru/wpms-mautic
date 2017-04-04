@@ -19,41 +19,42 @@ class MauticClient extends MauticAuth {
     // create a
     public function init_api($context = 'contacts') {
         // make sure auth is valid
-        $settings = $this->get_auth_details();
-        //$settings['password'] = 'wrong'; // set this to wrong...
-        $this->log('settings we are using to Auth: '.print_r($settings, TRUE));
-        // see https://github.com/mautic/api-library
-        session_start();  // initiate a session
+        if ($settings = $this->get_auth_details()) {
+            //$settings['password'] = 'wrong'; // set this to wrong...
+            $this->log('settings we are using to Auth: '.print_r($settings, TRUE));
+            // see https://github.com/mautic/api-library
+            session_start();  // initiate a session
 
-        $initAuth = new ApiAuth();
-        $auth = $initAuth->newAuth($settings, $settings['AuthMethod']);
-        //$this->log('Auth request: '.print_r($auth, true));
+            $initAuth = new ApiAuth();
+            $auth = $initAuth->newAuth($settings, $settings['AuthMethod']);
+            //$this->log('Auth request: '.print_r($auth, true));
 
-        // Get a Contact context
-        $api = new MauticApi();
-        $connection = $api->newApi($context, $auth, $settings['apiUrl']);
-        $this->log('API connection: '.print_r($connection, true));
+            // Get a Contact context
+            $api = new MauticApi();
+            $connection = $api->newApi($context, $auth, $settings['apiUrl']);
+            $this->log('API connection: '.print_r($connection, true));
 
-        // test the connection
-        if ($results = $connection->getList()) {
-            $this->log('getList test: '.print_r($results, true));
-            // integrate a proper error message for WP,
-            // redirect to setting page, let admin correct error
-            if (isset($results['errors'])) {
-                $type = $results['error'];
-                $message = $results['error_description'];
-                add_settings_error(
-                    MAUTIC_ADMIN_TITLE,
-                    MAUTIC_ADMIN_SLUG,
-                    $message,
-                    $type
-                );
-                $this->log('Oh noes! Error. Redirecting to settings page.');
-            //    $url = 'admin.php?page='.MAUTIC_ADMIN_SLUG;
-            //    wp_redirect(admin_url($url));
-            //    exit;
-            } elseif (isset($results['total'])) {
-                return $connection;
+            // test the connection
+            if ($results = $connection->getList()) {
+                $this->log('getList test: '.print_r($results, true));
+                // integrate a proper error message for WP,
+                // redirect to setting page, let admin correct error
+                if (isset($results['errors'])) {
+                    $type = $results['error'];
+                    $message = $results['error_description'];
+                    add_settings_error(
+                        MAUTIC_ADMIN_TITLE,
+                        MAUTIC_ADMIN_SLUG,
+                        $message,
+                        $type
+                    );
+                    $this->log('Oh noes! Error. Redirecting to settings page.');
+                //    $url = 'admin.php?page='.MAUTIC_ADMIN_SLUG;
+                //    wp_redirect(admin_url($url));
+                //    exit;
+                } elseif (isset($results['total'])) {
+                    return $connection;
+                }
             }
         }
         return false;
