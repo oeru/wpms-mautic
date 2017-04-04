@@ -212,13 +212,18 @@ class MauticAuth extends MauticBase {
         if (!$this->has_auth_details()) {
             $this->get_settings();
         }
-        $settings = array(
-            'userName' => $this->settings['mautic_user'], // username of Mautic user with API access
-            'password' => $this->settings['mautic_password'], // Mautic user password
-            'apiUrl' => $this->settings['mautic_url'], // Mautic API URL
-            'AuthMethod' => 'BasicAuth' // the auth method
-        );
-        return $settings;
+        if ($this->settings['mautic_url'] != '' &&
+            $this->settings['mautic_user'] != '' &&
+            $this->settings['mautic_password'] != '') {
+            $settings = array(
+                'userName' => $this->settings['mautic_user'], // username of Mautic user with API access
+                'password' => $this->settings['mautic_password'], // Mautic user password
+                'apiUrl' => $this->settings['mautic_url'], // Mautic API URL
+                'AuthMethod' => 'BasicAuth' // the auth method
+            );
+            return $settings;
+        }
+        return false;
     }
 
     // for convenience in working with Mautic's API, get the URL by itself.
