@@ -42,11 +42,9 @@ class MauticAuth extends MauticBase {
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
-        $this->log('in MauticAuth->add_pages');
         add_submenu_page(MAUTIC_SLUG, MAUTIC_ADMIN_TITLE,
             MAUTIC_ADMIN_MENU, 'manage_options', MAUTIC_ADMIN_SLUG,
             array($this, 'ajax_auth_page'));
-        $this->log('in MauticAuth->add_pages (done)');
     }
 
     // White list our options using the Settings API

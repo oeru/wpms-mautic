@@ -1,5 +1,7 @@
 /* mautic-sync styles */
 
+/* admin form */
+
 #mautic-sync-form input.error {
   border: solid 1px red;
 }
@@ -13,3 +15,20 @@
   border: 1px solid green;
 }
 
+/* status table */
+#mautic-sync-status table tr th.title {
+    font-size: 120%;
+}
+#mautic-sync-status table tr,
+#mautic-sync-status table td {
+    vertical-align: top;
+    padding: 2px;
+}
+#mautic-sync-status table td {
+    padding-left: 4px;
+}
+#mautic-sync-status table tr p,
+#mautic-sync-status table td p {
+    margin-top: 0px;
+    margin-bottom: 2px;
+}
