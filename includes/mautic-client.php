@@ -21,7 +21,7 @@ class MauticClient extends MauticAuth {
         // make sure auth is valid
         if ($settings = $this->get_auth_details()) {
             //$settings['password'] = 'wrong'; // set this to wrong...
-            $this->log('settings we are using to Auth: '.print_r($settings, TRUE));
+            //$this->log('settings we are using to Auth: '.print_r($settings, TRUE));
             // see https://github.com/mautic/api-library
             session_start();  // initiate a session
 
@@ -32,11 +32,11 @@ class MauticClient extends MauticAuth {
             // Get a Contact context
             $api = new MauticApi();
             $connection = $api->newApi($context, $auth, $settings['apiUrl']);
-            $this->log('API connection: '.print_r($connection, true));
+            //$this->log('API connection: '.print_r($connection, true));
 
             // test the connection
             if ($results = $connection->getList()) {
-                $this->log('getList test: '.print_r($results, true));
+                //$this->log('getList test: '.print_r($results, true));
                 // integrate a proper error message for WP,
                 // redirect to setting page, let admin correct error
                 if (isset($results['errors'])) {
@@ -71,7 +71,7 @@ class MauticClient extends MauticAuth {
         // get the number of Contacts
         if ($contacts = $this->init_api('contacts')) {
             $results = $contacts->getList();
-            $this->log('contacts context - total:'.$results['total']);
+            //$this->log('contacts context - total:'.$results['total']);
             $stats['num_contacts'] = $results['total'];
         } else {
             $this->log('failed to get a contacts context!');
@@ -80,13 +80,40 @@ class MauticClient extends MauticAuth {
         // get the number of Segments
         if ($segments = $this->init_api('segments')) {
             $results = $segments->getList();
-            $this->log('segments context - total:'.$results['total']);
+            //$this->log('segments context - total:'.$results['total']);
             $stats['num_segments'] = $results['total'];
         } else  {
             $this->log('failed to get a segments context!');
             return false;
         }
         return $stats;
+    }
+
+    // get the actual contact data
+    public function get_contacts() {
+        $contacts = array();
+        // get the full list of Contacts
+        if ($context = $this->init_api('contacts')) {
+            // default upper limit is 30 - set it to a large number
+            $contacts = $context->getList('',0,1000000,'','ASC',true,true);
+        } else {
+            $this->log('failed to get a contacts context!');
+            return false;
+        }
+        return $contacts;
+    }
+
+    // get the actual segment data
+    public function get_segments() {
+        $segments = array();
+        // get the full list of Contacts
+        if ($context = $this->init_api('segments')) {
+            $segments = $context->getList();
+        } else {
+            $this->log('failed to get a segments context!');
+            return false;
+        }
+        return $segments;
     }
 
 }
