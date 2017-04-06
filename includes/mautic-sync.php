@@ -13,9 +13,10 @@ class MauticSync extends MauticBase {
     protected $tabs = array(
         'status' => 'Sync Status',
         'matched_sites' => 'Matched Sites',
-        'unmatched_sites' => 'Unmatched Status',
+        'unmatched_sites' => 'Unmatched Sites',
         'matched_users' => 'Matched Users',
         'unmatched_users' => 'Unmatched Users',
+        'users_by_site' => 'Users By Site',
     );
 
     // register stuff when constructing this object instance
