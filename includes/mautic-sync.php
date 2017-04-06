@@ -208,11 +208,13 @@ class MauticSync extends MauticBase {
         // from Mautic
         $mautic_contacts = $this->mautic->get_contacts()['contacts'];
         $this->log(count($mautic_contacts).' contacts retrieved.');
-        foreach ($mautic_contacts as $contact) {
-            //$this->log('contact: '. print_r($contact, true));
-            $email = strtolower($contact['fields']['core']['email']['value']);
-            $people[$email]['mautic'] = $contact['id'];
-            $people[$email]['contact'] = $contact['fields']['core'];
+        if (count($mautic_contacts)) {
+            foreach ($mautic_contacts as $contact) {
+                //$this->log('contact: '. print_r($contact, true));
+                $email = strtolower($contact['fields']['core']['email']['value']);
+                $people[$email]['mautic'] = $contact['id'];
+                $people[$email]['contact'] = $contact['fields']['core'];
+            }
         }
         // print the result
         foreach ($people as $email => $person) {
