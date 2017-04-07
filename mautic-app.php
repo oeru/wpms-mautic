@@ -29,18 +29,23 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-define('MAUTIC_VERSION', '0.2.0');
+define('MAUTIC_VERSION', '0.3.0');
+// the path to this file
 define('MAUTIC_FILE', __FILE__);
+// absolute URL for this plugin, including site name, e.g.
+// https://sitename.nz/wp-content/plugins/
 define('MAUTIC_URL', plugins_url("/", __FILE__));
+// absolute server path to this plugin
 define('MAUTIC_PATH', plugin_dir_path(__FILE__));
-//define('MAUTIC_PUB_KEY_SIZE', 52);
-//define('MAUTIC_PRIV_KEY_SIZE', 50);
+// module details
 define('MAUTIC_SLUG', 'mautic_sync');
 define('MAUTIC_TITLE', 'Mautic Synchronisation');
 define('MAUTIC_MENU', 'Mautic Sync');
+// admin details
 define('MAUTIC_ADMIN_SLUG', 'mautic_settings');
 define('MAUTIC_ADMIN_TITLE', 'Mautic Synchronisation Settings');
 define('MAUTIC_ADMIN_MENU', 'Mautic Sync Settings');
+// api endpoint
 define('MAUTIC_API_ENDPOINT', 'api');
 // turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
@@ -48,7 +53,7 @@ define('MAUTIC_DEBUG', true);
 // include Mautic API and Auth code
 include MAUTIC_PATH . '/vendor/autoload.php';
 // the rest of the app
-require MAUTIC_PATH . 'includes/mautic-sync.php';
+require MAUTIC_PATH . '/includes/mautic-sync.php';
 
 /**
  * Start the plugin only if in Admin side and if site is Multisite

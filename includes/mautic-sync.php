@@ -4,6 +4,7 @@ include_once MAUTIC_PATH . '/includes/functions.php';
 include_once MAUTIC_PATH . '/includes/mautic-base.php';
 include_once MAUTIC_PATH . '/includes/mautic-auth.php';
 include_once MAUTIC_PATH . '/includes/mautic-client.php';
+include_once MAUTIC_PATH . '/includes/mautic-site.php';
 
 class MauticSync extends MauticBase {
 
@@ -33,6 +34,12 @@ class MauticSync extends MauticBase {
     // do smart stuff when this object is instantiated.
     public function init() {
         $this->log('in init');
+        // add our tab into the site setting admin page
+        /*$site_nav_links = array('site-mautic-sync' => array('label' => __('Mautic Sync'), 'url' => "../../".MAUTIC_PATH."includes/mautic-site.php",
+                'cap' => 'manage_sites'),
+        );*/
+        // add our updated links to the site nav links array via the filter
+        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
         // also call the admin_init
         add_action('admin_init', array($this, 'admin_init'));
         // Deactivation plugin
@@ -264,6 +271,23 @@ class MauticSync extends MauticBase {
         // get group related stuff - WP networks and Mautic Segments
         // match them on name
         return $groups;
+    }
+
+    public function insert_site_nav_link() {
+        $path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-site.php';
+        $links = array(
+            'site-info' => array('label' => __('Info'),
+                'url' => 'site-info.php', 'cap' => 'manage_sites'),
+            'site-users' => array('label' => __('Users'),
+                'url' => 'site-users.php', 'cap' => 'manage_sites'),
+            'site-mautic-sync' => array('label' => __('Mautic Sync'),
+                'url' => $path, 'cap' => 'manage_sites'),
+            'site-themes' => array('label' => __('Themes'),
+                'url' => 'site-themes.php', 'cap' => 'manage_sites'),
+            'site-settings' => array( 'label' => __('Settings'),
+                'url' => 'site-settings.php', 'cap' => 'manage_sites')
+        );
+        return $links;
     }
 
     // clean up if this plugin is deactivated.

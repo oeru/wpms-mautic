@@ -27,17 +27,15 @@ class MauticAuth extends MauticBase {
         // Admin sub-menu
         add_action('admin_init', array($this, 'admin_init'));
         $this->log('finished adding admin_init');
-        // Deactivation plugin
-        register_deactivation_hook(MAUTIC_FILE, array($this, 'deactivate'));
     }
 
     // do smart stuff when this object is instantiated.
     public function init() {
-        $this->log('in MauticAuth->init');
         // create this object's menu items
         add_action('network_admin_menu',
             array($this, 'add_pages'));
-        $this->log('in MauticAuth->init (done)');
+        // Deactivation plugin
+        register_deactivation_hook(MAUTIC_FILE, array($this, 'deactivate'));
     }
 
     // Add settings menu entry and various other sub pages
