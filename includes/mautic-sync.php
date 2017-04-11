@@ -1,12 +1,8 @@
 <?php
 
-include_once MAUTIC_PATH . '/includes/functions.php';
-include_once MAUTIC_PATH . '/includes/mautic-base.php';
-include_once MAUTIC_PATH . '/includes/mautic-auth.php';
-include_once MAUTIC_PATH . '/includes/mautic-client.php';
-include_once MAUTIC_PATH . '/includes/mautic-site.php';
+include_once MAUTIC_PATH . '/includes/mautic-hooks.php';
 
-class MauticSync extends MauticBase {
+class MauticSync extends MauticHooks {
 
     protected static $instance = NULL; // this instance
     //protected $auth; // Auth object that allows access to the Mautic API
@@ -27,53 +23,52 @@ class MauticSync extends MauticBase {
 
     // returns an instance of this class if called, instantiating if necessary
     public static function get_instance() {
-        NULL === self::$instance and self::$instance = new self;
+        NULL === self::$instance and self::$instance = new self();
         return self::$instance;
     }
 
-    // do smart stuff when this object is instantiated.
-    public function init() {
-        $this->log('in init');
-        // add our tab into the site setting admin page
-        /*$site_nav_links = array('site-mautic-sync' => array('label' => __('Mautic Sync'), 'url' => "../../".MAUTIC_PATH."includes/mautic-site.php",
-                'cap' => 'manage_sites'),
-        );*/
-        // add our updated links to the site nav links array via the filter
-        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
+    // The context is the situation in which this object is created.
+    // Options:
+    // 1. 'network' - the Network Admin interface - multi-site wide configuration
+    // 2. 'site' - the per-Site interface - site-specific configuration
+    // As a general rule, there's one context per top-level mautic-*.php file :)
+
+    // the Network Context
+    // Do smart stuff when this object is instantiated.
+    public function network_init() {
+        $this->log('in network_init');
+        $this->log('network context');
+        // create this object's menu items
+        add_action('network_admin_menu', array($this, 'add_network_pages'));
         // also call the admin_init
         add_action('admin_init', array($this, 'admin_init'));
-        // Deactivation plugin
-        register_deactivation_hook(MAUTIC_FILE, array($this, 'deactivate'));        // This will show the stylesheet in wp_head() in the app/index.php file
+        // do the context independent stuff
+        $this->common_init();
+    }
+
+    // The Site Context
+    // Do smart stuff when this object is instantiated.
+    public function site_init() {
+        $this->log('in site_init');
+        // add our updated links to the site nav links array via the filter
+        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
+        // do the context independent stuff
+
+        $this->common_init();
+    }
+
+    public function common_init() {
+        // This will show the stylesheet in wp_head() in the app/index.php file
         wp_enqueue_style('stylesheet', MAUTIC_URL.'app/css/styles.css');
         // registering for use elsewhere
         wp_register_script(
             'jquery-validate',
             'https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js',
             array('jquery'), true);
-        // if we're on the Mautic page, add our CSS...
-        if (preg_match('~\/' . preg_quote(MAUTIC_URL) . '\/?$~', $_SERVER['REQUEST_URI'])) {
-    		    // This will show the scripts in the footer
-            wp_enqueue_script('script', MAUTIC_URL.'app/js/script.js', array('jquery'), false, true);
-            require MAUTIC_PATH . 'app/index.php';
-            exit;
-        }
-
-        //$this->log('in MauticSync init...');
-        // create this object's menu items
-        add_action('network_admin_menu', array($this, 'add_pages'));
-
+        // register all relevant hooks
+        $this->register_hooks();
         // create other necessary objects
-        //$auth = new MauticAuth();
-        //$this->mautic = new MauticClient($auth);
         $this->mautic = new MauticClient();
-    }
-
-    // Add settings menu entry and various other sub pages
-    public function add_pages() {
-        $this->log('in MauticSync->add_pages');
-        // no op right now....
-        add_menu_page(MAUTIC_TITLE, MAUTIC_MENU,
-            'manage_options', MAUTIC_SLUG, array($this, 'sync_page'));
     }
 
     // White list our options using the Settings API
@@ -92,6 +87,14 @@ class MauticSync extends MauticBase {
             'submit_nonce' => wp_create_nonce( 'mautic-submit-nonse'),
             'auth_nonce' => wp_create_nonce( 'mautic-auth-nonse'),
         ));
+    }
+
+    // Add settings menu entry and various other sub pages
+    public function add_network_pages() {
+        $this->log('in MauticSync->add_network_pages');
+        // no op right now....
+        add_menu_page(MAUTIC_TITLE, MAUTIC_MENU,
+            'manage_options', MAUTIC_SLUG, array($this, 'sync_page'));
     }
 
     // Print the menu page itself, with tab navigation
@@ -123,6 +126,8 @@ class MauticSync extends MauticBase {
                 $this->unmatched_user_tab();
                 break;
         }
+
+        // below tabs
     }
 
     // Print the menu page itself
@@ -290,9 +295,13 @@ class MauticSync extends MauticBase {
         return $links;
     }
 
+
+
+
     // clean up if this plugin is deactivated.
-    public function deactivate() {
+    /*public function deactivate() {
         // nuke everything created by other objects
         $this->auth->deactivate;
-    }
+    }*/
+
 }

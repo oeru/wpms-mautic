@@ -8,6 +8,8 @@
  */
 
 /* Load WordPress Administration Bootstrap */
+
+/* Start Wordpress Site Admin boilerplate */
 require_once( dirname( __FILE__ ) . '/../../../wp-admin/admin.php' );
 
 if ( ! current_user_can( 'manage_sites' ) ) {
@@ -131,6 +133,17 @@ $submenu_file = 'sites.php';
 
 require( ABSPATH . 'wp-admin/admin-header.php' );
 
+/* End Wordpress Site Admin boilerplate */
+
+/**
+ * Start the plugin only if in Admin side and if site is Multisite
+ * see http://stackoverflow.com/questions/13960514/how-to-adapt-my-plugin-to-multisite/
+ */
+if (is_admin() && is_multisite()) {
+    add_action('plugins_loaded',
+        array(MauticSync::get_instance(), 'site_init')
+    );
+}
 ?>
 
 <div class="wrap">
@@ -148,6 +161,9 @@ if ( ! empty( $messages ) ) {
 		echo '<div id="message" class="updated notice is-dismissible"><p>' . $msg . '</p></div>';
 	}
 }
+
+
+
 ?>
 <form method="post" action="mautic-site.php?action=update-site">
 	<?php wp_nonce_field( 'edit-site' ); ?>
@@ -164,7 +180,7 @@ if ( ! empty( $messages ) ) {
 		// For any other site, the scheme, domain, and path can all be changed.
 		else : ?>
 		<tr class="form-field form-required">
-			<th scope="row">Corresponding Segment for this Course:</th>
+			<th scope="row">Mautic Segment</th>
 			<td>none (<a href="mautic-site.php?action=add-segment">create</a>)</td>
 		</tr>
 		<?php endif; ?>

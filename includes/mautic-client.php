@@ -1,8 +1,6 @@
 <?php
 
-include MAUTIC_PATH . '/vendor/autoload.php';
-include_once MAUTIC_PATH . '/includes/functions.php';
-include_once MAUTIC_PATH . '/includes/mautic-base.php';
+include_once MAUTIC_PATH . '/includes/mautic-auth.php';
 use Mautic\Auth\ApiAuth;
 use Mautic\MauticApi;
 

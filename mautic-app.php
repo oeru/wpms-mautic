@@ -51,7 +51,7 @@ define('MAUTIC_API_ENDPOINT', 'api');
 define('MAUTIC_DEBUG', true);
 
 // include Mautic API and Auth code
-include MAUTIC_PATH . '/vendor/autoload.php';
+include_once MAUTIC_PATH . '/vendor/autoload.php';
 // the rest of the app
 require MAUTIC_PATH . '/includes/mautic-sync.php';
 
@@ -61,6 +61,6 @@ require MAUTIC_PATH . '/includes/mautic-sync.php';
  */
 if (is_admin() && is_multisite()) {
     add_action('plugins_loaded',
-        array(MauticSync::get_instance(), 'init')
+        array(MauticSync::get_instance(), 'network_init')
     );
 }
