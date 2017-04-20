@@ -35,29 +35,14 @@ class MauticSync extends MauticHooks {
 
     // the Network Context
     // Do smart stuff when this object is instantiated.
-    public function network_init() {
-        $this->log('in network_init');
-        $this->log('network context');
+    public function init() {
+        $this->log('in init');
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_network_pages'));
-        // also call the admin_init
-        add_action('admin_init', array($this, 'admin_init'));
-        // do the context independent stuff
-        $this->common_init();
-    }
-
-    // The Site Context
-    // Do smart stuff when this object is instantiated.
-    public function site_init() {
-        $this->log('in site_init');
         // add our updated links to the site nav links array via the filter
         add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
-        // do the context independent stuff
-
-        $this->common_init();
-    }
-
-    public function common_init() {
+        // also call the admin_init
+        add_action('admin_init', array($this, 'admin_init'));
         // This will show the stylesheet in wp_head() in the app/index.php file
         wp_enqueue_style('stylesheet', MAUTIC_URL.'app/css/styles.css');
         // registering for use elsewhere
@@ -69,6 +54,12 @@ class MauticSync extends MauticHooks {
         $this->register_hooks();
         // create other necessary objects
         $this->mautic = new MauticClient();
+    }
+
+    public function site_init($id = '1') {
+        $this->log('in site_init, id = '. $id);
+        $this->init();
+        $this->site_tab($id);
     }
 
     // White list our options using the Settings API
@@ -132,7 +123,7 @@ class MauticSync extends MauticHooks {
 
     // Print the menu page itself
     public function sync_stats_tab() {
-        $this->log('ajax_page');
+        $this->log('sync_stats_tab');
         $wp_stats = wp_get_stats();
         $m_stats = $this->mautic->get_stats();
         $people = $this->get_people();
@@ -146,6 +137,7 @@ class MauticSync extends MauticHooks {
             have multiple sub-sites (called "networks") to which users can
             belong. We represent these in Mautic with "segments", and this
             plugin allows you to keep them synchronised.</p>
+            <p>This section provides overall synchronisation between WordPress and Mautic. Site-level integration with individual Mautic Segments is managed using the "Mautic Sync" tab on each <a href="/wp-admin/network/sites.php">site's administration page</a>.</p>
             <table class="sync-table">
                 <tr><th colspan=2 class="title">Mautic Sync Statistics</th>
                 <tr>
@@ -174,6 +166,101 @@ class MauticSync extends MauticHooks {
                     </td>
                 </tr>
             </table>
+        </div>
+        <?php
+    }
+
+    // Print the menu page itself
+    public function site_tab($site_id) {
+        // get the site's name:
+        $site = get_site($site_id);
+        $site_name = $this->get_site_name($site);
+        $this->log('site: '.print_r($site, true));
+
+        $this->log('site_tab');
+        ?>
+        <div class="wrap" id="mautic-site-sync-status">
+            <h2>Mautic Synchronisation for <strong><?php echo $site->blogname.' ('.$site_name.')'; ?></strong></h2>
+            <p>Site users and their Mautic status, and actions to alter that status.</p>
+            <table class="sync-table segment">
+                <?php
+                // first check if there's a linked Segment in Mautic
+                if ($segment_name = $this->has_segment($site_name)) {
+                    $this->log('valid segment found');
+                    ?>
+                    <tr class="segment found">
+                        <td class="label">Linked Mautic Segment</td>
+                        <td colspan=2><?php echo $segment_name; ?></td>
+                    </tr>
+                    <?php
+                } else {
+                    $this->log('no segment found');
+                    // if not, offer to create one
+                    ?>
+                    <tr class="segment create">
+                        <th  class="label">No corresponding Mautic Segment</th>
+                        <td colspan=2><p class="submit">
+                            <input type="button" id="mautic-create-segment" class="button-primary" value="Create Segment"/>
+                        </p></td>
+                    </tr>
+                    <?php
+                }
+                ?>
+            </table>
+            <table class="sync-table site">
+            <?php
+                /*$users = array('users'=>array(
+                    1 => array('id'=>10, 'first'=>"Dave", 'last'=>'Lane', 'email'=>'dave@oerfoundation.org'),
+                    2 => array('id'=>9, 'first'=>"Wayne", 'last'=>'Mackintosh', 'email'=>'wayne@oerfoundation.org'),
+                    3 => array('id'=>8, 'first'=>"Test", 'last'=>'User', 'email'=>'test@sound.org.nz'),
+                )); */
+                $filter = 'blog_id='.$site_id.
+                    '&orderby=display_name&orderby=nicename';
+                $users = get_users($filter);
+                //$this->log('users for blog '.$site_id.':'. print_r($users,true));
+                if (count($users)) {
+                    $alt = 0;
+                    ?>
+                    <tr class="heading">
+                        <th class="label">WordPress User</th>
+                        <th class="label">Mautic Contact</th>
+                        <th class="label">Actions</th>
+                    </tr>
+                    <?php
+                    foreach ($users as $index => $data){
+                        $user_id = $data->ID;
+                        $referrer =
+                            '/wp-content/plugins/wpms-mautic/mautic-site.php?id='.
+                            $site_id;
+                        $wp_url = '/wp-admin/network/user-edit.php?user_id='.$user_id.
+                            '&wp_http_referer='.$referrer;
+                        $wp_name = $data->data->display_name;
+                        $wp_email = $data->data->user_email;
+                        $rowclass = "user-row";
+                        $rowclass .= ($alt%2==0)? " odd":" even";
+                        echo '<tr "'.$rowclass.'">';
+                        echo '    <td class="wp-details"><a href="'.$wp_url.'">'.$wp_name.'</a> (<a href="mailto:'.$wp_email.'">'.$wp_email.'</a>)</td>';
+                        if ($contact = $this->get_mautic)
+                        echo '    <td class="mautic-details"><a href="'.$mautic_url.'">'.$mautic_name.'</a> (<a href="mailto:'.$mautic_email.'">'.$mautic_email.'</a>)</td>';
+                        echo '    <td class="actions">';
+                        // if there's a valid segment, offer to add the user
+                        if ($segment_name && !$contact) {
+                            echo '        <p class="button">';
+                            echo '            <input type="button" id="mautic-add-user-to-segment" class="button-primary" value="'._e('Add to Segment').'" />';
+                            echo '        </p>';
+                        } else { // if not, don't
+                            echo '        <p>Segment required...</p>';
+                        }
+                        echo '    </td>';
+                        echo '</tr>';
+                    }
+                } else {
+                    echo '<tr "'.$rowclass.'">';
+                    echo ' <td class="no-users">This Site has no Users.</td>';
+                    echo '</tr>';
+                }?>
+            </table>
+            <!--<input type="hidden" id="mautic-create-segment-nonce" value="<?php echo $nonce_create_segment; ?>" />-->
         </div>
         <?php
     }
@@ -251,7 +338,7 @@ class MauticSync extends MauticHooks {
         $this->log(count($wp_sites).' sites retrieved.');
         foreach ($wp_sites as $site) {
             //$this->log('site: '. print_r($site, true));
-            $name = strtolower(substr($site->path,1,-1));
+            $name = $this->get_site_name($site);
             //$this->log('site name: '. $name);
             $groups[$name]['wp'] = $site->blog_id;
             $groups[$name]['site'] = $site;
@@ -278,6 +365,9 @@ class MauticSync extends MauticHooks {
         return $groups;
     }
 
+    // create the array of tabs to include Mautic Sync per Site
+    // NOTE: this will need to be updated if the functionality in
+    // default WP is updated!!
     public function insert_site_nav_link() {
         $path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-site.php';
         $links = array(
@@ -295,9 +385,10 @@ class MauticSync extends MauticHooks {
         return $links;
     }
 
-
-
-
+    // given a site object, return the site's name
+    public function get_site_name($site) {
+        return strtolower(substr($site->path,1,-1));
+    }
     // clean up if this plugin is deactivated.
     /*public function deactivate() {
         // nuke everything created by other objects

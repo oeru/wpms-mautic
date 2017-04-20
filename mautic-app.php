@@ -61,6 +61,6 @@ require MAUTIC_PATH . '/includes/mautic-sync.php';
  */
 if (is_admin() && is_multisite()) {
     add_action('plugins_loaded',
-        array(MauticSync::get_instance(), 'network_init')
+        array(MauticSync::get_instance(), 'init')
     );
 }

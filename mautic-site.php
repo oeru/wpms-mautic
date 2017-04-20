@@ -140,9 +140,8 @@ require( ABSPATH . 'wp-admin/admin-header.php' );
  * see http://stackoverflow.com/questions/13960514/how-to-adapt-my-plugin-to-multisite/
  */
 if (is_admin() && is_multisite()) {
-    add_action('plugins_loaded',
-        array(MauticSync::get_instance(), 'site_init')
-    );
+    $sync = MauticSync::get_instance();
+    $sync->log('testing!!');
 }
 ?>
 
@@ -165,28 +164,22 @@ if ( ! empty( $messages ) ) {
 
 
 ?>
-<form method="post" action="mautic-site.php?action=update-site">
-	<?php wp_nonce_field( 'edit-site' ); ?>
-	<input type="hidden" name="id" value="<?php echo esc_attr( $id ) ?>" />
-	<table class="form-table">
-		<?php
-		// The main site of the network should not be updated on this page.
-		if ( $is_main_site ) : ?>
-		<tr class="form-field">
-			<th scope="row"><?php _e( 'Site Address (URL)' ); ?></th>
-			<td><?php echo esc_url( $details->domain . $details->path ); ?></td>
-		</tr>
-		<?php
-		// For any other site, the scheme, domain, and path can all be changed.
-		else : ?>
-		<tr class="form-field form-required">
-			<th scope="row">Mautic Segment</th>
-			<td>none (<a href="mautic-site.php?action=add-segment">create</a>)</td>
-		</tr>
-		<?php endif; ?>
-	</table>
-	<?php //submit_button(); ?>
-</form>
+	<?php
+	// The main site of the network should not be updated on this page.
+	if ( $is_main_site ) { ?>
+    <table class="form-table">
+        <tr class="form-field">
+	        <th scope="row"><?php _e( 'Site Address (URL)' ); ?></th>
+	        <td><?php echo esc_url( $details->domain . $details->path ); ?></td>
+	    </tr>
+    </table>
+	<?php
+    }
+	// For any other site, the scheme, domain, and path can all be changed.
+	else {
+        $sync->site_init($id);
+    }
+    ?>
 
 </div>
 <?php

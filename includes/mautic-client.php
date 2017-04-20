@@ -114,4 +114,12 @@ class MauticClient extends MauticAuth {
         return $segments;
     }
 
+    // check for a segment matching a site
+    public function has_segment($name) {
+        if ($segment_name = "segment") {
+            return $segment_name;
+        }
+        return false;
+    }
+
 }
