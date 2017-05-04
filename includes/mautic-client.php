@@ -115,9 +115,63 @@ class MauticClient extends MauticAuth {
     }
 
     // check for a segment matching a site
-    public function has_segment($name) {
-        if ($segment_name = "segment") {
-            return $segment_name;
+    public function has_segment($alias) {
+        if ($segmentApi = $this->init_api('segments')) {
+            $searchFilter = 'alias:'.$alias;
+            $searchFilter = $alias;
+            $this->log('searchFilter: '.$searchFilter);
+            if ($segments = $segmentApi->getList($searchFilter,0,1,'','',true,true)) {
+                $this->log('segments info: '.print_r($segments, true));
+                if (!$this->api_error($segments)) {
+                    $this->log('segment info: '.print_r($segment, true));
+                    foreach($segments['lists'] as $id => $segment) {
+                        // return the first one
+                        return $segment;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // create a new segment with the given name and short name (aka "tag")
+    public function create_segment($name, $tag) {
+        if ($segmentApi = $this->init_api('segments')) {
+            $data = array(
+                'name'        => $name,
+                'alias'       => strtolower($tag),
+                'description' => 'Segment created to represent "'.$name.'" site.',
+                'isPublished' => 1
+            );
+            $segment = $segmentApi->create($data);
+            if ($this->api_error($segment)) {
+                return false;
+            } else {
+                $this->log('segments: '.print_r($segment, true));
+                return true;
+            }
+        } else {
+            $this->log('failed to get a segments context!');
+            return false;
+        }
+    }
+
+    // handle API errors in a standard way
+    protected function api_error($obj) {
+        if (is_array($obj['errors'])) {
+            $num_errors = count($obj['errors']);
+            $msg = $num_errors.' ';
+            $msg .= ($num_errors == 1) ? 'error' : 'errors';
+            $msg .= ' found';
+            $this->log($msg);
+            foreach($obj['errors'] as $error) {
+                $this->log('error code: '.$error['code']);
+                $this->log('error message: '.$error['message']);
+                foreach($error['details'] as $key => $val) {
+                    $this->log('error detail - '.$key.': '.$val[0]);
+                }
+            }
+            return true;
         }
         return false;
     }

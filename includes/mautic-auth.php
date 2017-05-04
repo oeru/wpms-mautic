@@ -31,15 +31,22 @@ class MauticAuth extends MauticBase {
 
     // do smart stuff when this object is instantiated.
     public function init() {
+        // This will show the stylesheet in wp_head() in the app/index.php file
+        wp_enqueue_style('stylesheet', MAUTIC_URL.'app/css/styles.css');
+        // registering for use elsewhere
+        wp_register_script(
+            'jquery-validate',
+            'https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js',
+            array('jquery'), true);
         // create this object's menu items
-        add_action('network_admin_menu',
-            array($this, 'add_pages'));
+        add_action('network_admin_menu', array($this, 'add_pages'));
         // Deactivation plugin
-        register_deactivation_hook(MAUTIC_FILE, array($this, 'deactivate'));
+        //register_deactivation_hook(MAUTIC_FILE, array($this, 'deactivate'));
     }
 
     // Add settings menu entry and various other sub pages
     public function add_pages() {
+        $this->log('in add_pages');
         add_submenu_page(MAUTIC_SLUG, MAUTIC_ADMIN_TITLE,
             MAUTIC_ADMIN_MENU, 'manage_options', MAUTIC_ADMIN_SLUG,
             array($this, 'ajax_auth_page'));
@@ -48,7 +55,13 @@ class MauticAuth extends MauticBase {
     // White list our options using the Settings API
     public function admin_init() {
         $this->log('in MauticAuth->admin_init');
+        // this is a dependence of the admin-ajax.js script
+        wp_enqueue_script( 'jquery-validate');
         // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
+        wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/admin-ajax.js', array(
+            'jquery',
+            'jquery-form'
+        ));
         wp_localize_script( 'mautic-ajax-request', 'mautic_sync_ajax', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'submit_nonce' => wp_create_nonce( 'mautic-submit-nonse'),
@@ -228,6 +241,13 @@ class MauticAuth extends MauticBase {
             $this->get_settings();
         }
         return $this->settings['mautic_url'];
+    }
+
+    // for convenience, return the base Mautic URL
+    public function get_baseurl() {
+        $parts = parse_url($this->get_url());
+        $this->log('url: '.print_r($parts, true));
+        return $parts['scheme'].'://'.$parts['host'];
     }
 
     // for convenience, return the auth object

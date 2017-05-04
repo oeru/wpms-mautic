@@ -36,20 +36,12 @@ class MauticSync extends MauticHooks {
     // the Network Context
     // Do smart stuff when this object is instantiated.
     public function init() {
+        //MauticAuth::init();
         $this->log('in init');
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_network_pages'));
         // add our updated links to the site nav links array via the filter
         add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
-        // also call the admin_init
-        add_action('admin_init', array($this, 'admin_init'));
-        // This will show the stylesheet in wp_head() in the app/index.php file
-        wp_enqueue_style('stylesheet', MAUTIC_URL.'app/css/styles.css');
-        // registering for use elsewhere
-        wp_register_script(
-            'jquery-validate',
-            'https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.15.0/jquery.validate.js',
-            array('jquery'), true);
         // register all relevant hooks
         $this->register_hooks();
         // create other necessary objects
@@ -58,27 +50,21 @@ class MauticSync extends MauticHooks {
 
     public function site_init($id = '1') {
         $this->log('in site_init, id = '. $id);
-        $this->init();
-        $this->site_tab($id);
-    }
-
-    // White list our options using the Settings API
-    public function admin_init() {
-        $this->log('in MauticSync->admin_init');
-        wp_enqueue_script( 'jquery-validate');
-        // embed the javascript file that makes the AJAX request
-        wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/ajax.js', array(
+        // also , so includes jquery-validate
+        wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/site-ajax.js', array(
             'jquery',
             'jquery-form'
         ));
         // declare the URL to the file that handles the AJAX request
         // (wp-admin/admin-ajax.php)
         wp_localize_script( 'mautic-ajax-request', 'mautic_sync_ajax', array(
-            'ajaxurl' => admin_url( 'admin-ajax.php' ),
-            'submit_nonce' => wp_create_nonce( 'mautic-submit-nonse'),
-            'auth_nonce' => wp_create_nonce( 'mautic-auth-nonse'),
+            'ajaxurl' => admin_url( 'site-ajax.php' ),
+            'segment_nonce' => wp_create_nonce( 'mautic-segment-nonse'),
+            'contacts_nonce' => wp_create_nonce( 'mautic-contact-nonse'),
         ));
+        $this->site_tab($id);
     }
+
 
     // Add settings menu entry and various other sub pages
     public function add_network_pages() {
@@ -179,18 +165,24 @@ class MauticSync extends MauticHooks {
 
         $this->log('site_tab');
         ?>
-        <div class="wrap" id="mautic-site-sync-status">
+        <div class="wrap" id="mautic-site-sync">
             <h2>Mautic Synchronisation for <strong><?php echo $site->blogname.' ('.$site_name.')'; ?></strong></h2>
             <p>Site users and their Mautic status, and actions to alter that status.</p>
             <table class="sync-table segment">
                 <?php
                 // first check if there's a linked Segment in Mautic
-                if ($segment_name = $this->has_segment($site_name)) {
+                if ($segment = $this->has_segment($site_name)) {
                     $this->log('valid segment found');
+                    $mautic_url = $this->get_baseurl();
+                    $segment_edit = '/s/segments/edit/';
+                    $segment_name = $segment['name'];
+                    //$this->create_segment($site->blogname, $site_name);
                     ?>
                     <tr class="segment found">
-                        <td class="label">Linked Mautic Segment</td>
-                        <td colspan=2><?php echo $segment_name; ?></td>
+                        <td class="label">Linked Mautic Segment:</td>
+                        <td colspan=2><strong><?php echo $segment['name'].' ('.$segment['alias'].')'; ?></strong>
+                            <a href="<?php echo $mautic_url.$segment_edit.$segment['id']; ?>" title="Edit on Mautic - <?php echo $mautic_url; ?>">edit segment</a>
+                        </td>
                     </tr>
                     <?php
                 } else {
@@ -240,9 +232,9 @@ class MauticSync extends MauticHooks {
                         $rowclass .= ($alt%2==0)? " odd":" even";
                         echo '<tr "'.$rowclass.'">';
                         echo '    <td class="wp-details"><a href="'.$wp_url.'">'.$wp_name.'</a> (<a href="mailto:'.$wp_email.'">'.$wp_email.'</a>)</td>';
-                        if ($contact = $this->get_mautic)
+                        /*if ($contact = $this->get_mautic)
                         echo '    <td class="mautic-details"><a href="'.$mautic_url.'">'.$mautic_name.'</a> (<a href="mailto:'.$mautic_email.'">'.$mautic_email.'</a>)</td>';
-                        echo '    <td class="actions">';
+                        echo '    <td class="actions">'; */
                         // if there's a valid segment, offer to add the user
                         if ($segment_name && !$contact) {
                             echo '        <p class="button">';
