@@ -201,15 +201,16 @@ class MauticSync extends MauticHooks {
             </table>
             <table class="sync-table site">
             <?php
-                /*$users = array('users'=>array(
-                    1 => array('id'=>10, 'first'=>"Dave", 'last'=>'Lane', 'email'=>'dave@oerfoundation.org'),
-                    2 => array('id'=>9, 'first'=>"Wayne", 'last'=>'Mackintosh', 'email'=>'wayne@oerfoundation.org'),
-                    3 => array('id'=>8, 'first'=>"Test", 'last'=>'User', 'email'=>'test@sound.org.nz'),
-                )); */
-                $filter = 'blog_id='.$site_id.
+                // get the WP users for this site/course
+                $searchFilter = 'blog_id='.$site_id.
                     '&orderby=display_name&orderby=nicename';
-                $users = get_users($filter);
-                //$this->log('users for blog '.$site_id.':'. print_r($users,true));
+                $users = get_users($searchFilter);
+                $this->log('users for blog '.$site_id.':'. print_r($users,true));
+                // now find the Mautic contacts corresponding to the
+                // users, and whether or not they're in the segment
+                $people = $this->get_contacts_by_email($users);
+                $this->log('people: '.print_r($people, true));
+                //$contacts = $this->get_contacts_for_segment($users);
                 if (count($users)) {
                     $alt = 0;
                     ?>
@@ -232,16 +233,17 @@ class MauticSync extends MauticHooks {
                         $rowclass .= ($alt%2==0)? " odd":" even";
                         echo '<tr "'.$rowclass.'">';
                         echo '    <td class="wp-details"><a href="'.$wp_url.'">'.$wp_name.'</a> (<a href="mailto:'.$wp_email.'">'.$wp_email.'</a>)</td>';
-                        /*if ($contact = $this->get_mautic)
-                        echo '    <td class="mautic-details"><a href="'.$mautic_url.'">'.$mautic_name.'</a> (<a href="mailto:'.$mautic_email.'">'.$mautic_email.'</a>)</td>';
-                        echo '    <td class="actions">'; */
+                        //if ($contact = $this->get_mautic) {
+                            echo '    <td class="mautic-details"><a href="'.$mautic_url.'">'.$mautic_name.'</a> (<a href="mailto:'.$mautic_email.'">'.$mautic_email.'</a>)</td>';
+                        //}
+                        echo '    <td class="actions">';
                         // if there's a valid segment, offer to add the user
                         if ($segment_name && !$contact) {
-                            echo '        <p class="button">';
-                            echo '            <input type="button" id="mautic-add-user-to-segment" class="button-primary" value="'._e('Add to Segment').'" />';
-                            echo '        </p>';
+                            //echo '        <p class="button">';
+                            echo '            <input type="button" class="button" id="mautic-add-user-to-segment" value="Add to Segment"/>';
+                        //    echo '        </p>';
                         } else { // if not, don't
-                            echo '        <p>Segment required...</p>';
+                            echo '        Segment required...';
                         }
                         echo '    </td>';
                         echo '</tr>';

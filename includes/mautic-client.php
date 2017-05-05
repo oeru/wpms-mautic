@@ -156,6 +156,47 @@ class MauticClient extends MauticAuth {
         }
     }
 
+    // get a list of contacts by email
+    public function get_contacts_by_email($users) {
+        if ($contactApi = $this->init_api('contacts')) {
+            $people = array(); // initialise array we're going to return
+            $searchFilter = ''; // initialise
+            foreach($users as $user) {
+                // add the user object to our people array, keyed on email
+                //$people[$user->data->user_email]['user'] = $user;
+                $people[$user->data->user_email]['wp_id'] = $user->data->ID;
+                $people[$user->data->user_email]['wp_name'] = $user->data->display_name;
+                // build the search filter
+                if ($searchFilter == '') {
+                    $searchFilter .= 'email:'.$user->data->user_email;
+                } else {
+                    $searchFilter .= ' OR email:'.$user->data->user_email;
+                }
+            }
+            $this->log('searchFilter: '.$searchFilter);
+            if ($contacts = $contactApi->getList($searchFilter,0,count($contacts),
+                '','',true,true)) {
+                $this->log('contacts info: '.print_r($contacts, true));
+                if (!$this->api_error($contacts)) {
+                    //$this->log('contact info: '.var_dump($contacts, true));
+                    foreach($contacts['contacts'] as $contact) {
+                        //$this->log('contact core fields:'.print_r($contact['fields']['core'], true));
+                        $email = $contact['fields']['core']['email']['value'];
+                        //$people[$email]['contact'] = $contact['fields']['core'];
+                        $people[$email]['m_id'] = $contact['id'];
+                        $people[$email]['m_name'] = $contact['fields']['core']['firstname']['value'].' '.
+                            $contact['fields']['core']['lastname']['value'];
+                    }
+                    return $people;
+                }
+            }
+        }
+        return false;
+    }
+
+    // get the contacts in a segment
+    public function get_contacts_for_segment($segment_id, $contacts) {
+    }
     // handle API errors in a standard way
     protected function api_error($obj) {
         if (is_array($obj['errors'])) {
