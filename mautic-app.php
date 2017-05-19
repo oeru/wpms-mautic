@@ -6,7 +6,7 @@
 Plugin Name: Mautic Synchronise
 Plugin URI: http://github.com/oeru/wpms-mautic
 Description: Synchronise WordPress multi-site users with OERu Course-specific Mautic Segments depending on Courses (subsites) with which they are associated.
-Version: 0.1.0
+Version: 0.3.0
 Author: Dave Lane
 Author URI: https://davelane.nz
 License: GPLv2 or later
@@ -47,8 +47,9 @@ define('MAUTIC_ADMIN_TITLE', 'Mautic Synchronisation Settings');
 define('MAUTIC_ADMIN_MENU', 'Mautic Sync Settings');
 // api endpoint
 define('MAUTIC_API_ENDPOINT', 'api');
-// turn on debugging with true, off with false
+//// turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
+define('MAUTIC_DEBUG', false);
 
 // include Mautic API and Auth code
 include_once MAUTIC_PATH . '/vendor/autoload.php';

@@ -9,11 +9,11 @@ class MauticSync extends MauticHooks {
     protected static $mautic; // Mautic API client object
     protected $tabs = array(
         'status' => 'Sync Status',
-        'matched_sites' => 'Matched Sites',
+        /*'matched_sites' => 'Matched Sites',
         'unmatched_sites' => 'Unmatched Sites',
         'matched_users' => 'Matched Users',
         'unmatched_users' => 'Unmatched Users',
-        'users_by_site' => 'Users By Site',
+        'users_by_site' => 'Users By Site', */
     );
 
     // register stuff when constructing this object instance
@@ -114,16 +114,24 @@ class MauticSync extends MauticHooks {
         $m_stats = $this->mautic->get_stats();
         $people = $this->get_people();
         $groups = $this->get_groups();
+        $remediate_path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-remediate.php';
+        $settings_path =  '/wp-admin/network/admin.php?page='.MAUTIC_ADMIN_SLUG;
         ?>
         <div class="wrap" id="mautic-sync-status">
             <h2>Mautic Synchronisation</h2>
             <p>The purpose of this plugin is to allow the synchronisation
             between WordPress users on this site and Mautic "contacts". </p>
             <p>Also, because this is a WordPress Multisite instance, we can
-            have multiple sub-sites (called "networks") to which users can
+            have multiple sub-sites (called "sites") to which users can
             belong. We represent these in Mautic with "segments", and this
             plugin allows you to keep them synchronised.</p>
-            <p>This section provides overall synchronisation between WordPress and Mautic. Site-level integration with individual Mautic Segments is managed using the "Mautic Sync" tab on each <a href="/wp-admin/network/sites.php">site's administration page</a>.</p>
+            <p>This section provides the status of synchronisation between
+            WordPress and Mautic. Site-level integration with individual
+            Mautic Segments is managed using the "Mautic Sync" tab on each
+            <a href="/wp-admin/network/sites.php">site's administration page</a>.
+            </p>
+            <p>After <a href="<?php echo $settings_path; ?>">configuring your Mautic authentication</a> details, if you're adding Mautic integration to an existing Wordpress
+                Multisite, you will probably want to perform an <a href="<?php echo $remediate_path; ?>">initial synchronisation</a>.</p>
             <table class="sync-table">
                 <tr><th colspan=2 class="title">Mautic Sync Statistics</th>
                 <tr>
@@ -131,7 +139,7 @@ class MauticSync extends MauticHooks {
                     <th scope="row">WordPress</th>
                     <td>
                         <p><strong><?php print($wp_stats['num_users']); ?></strong> Users</p>
-                        <p><strong><?php print($wp_stats['num_networks']); ?></strong> Networks</p>
+                        <p><strong><?php print($wp_stats['num_sites']); ?></strong> Sites</p>
                     </td>
                 </tr>
 
@@ -146,8 +154,8 @@ class MauticSync extends MauticHooks {
                     <th scope="row">Match Stats</th>
                     <td>
                         <p>Matched <strong><?php print($people['matches']); ?></strong> WP Users to corresponding Mautic Contacts</p>
-                        <p>Matched <strong><?php print($groups['matches']); ?></strong> WP Networks to corresonding Mautic Segments</p>
-                        <p>Unmatched: <strong><?php print($wp_stats['num_users']-$people['matches']); ?></strong> WP Users, <strong><?php print($wp_stats['num_networks']-$groups['matches']); ?></strong> Networks</p>
+                        <p>Matched <strong><?php print($groups['matches']); ?></strong> WP Sites to corresonding Mautic Segments</p>
+                        <p>Unmatched: <strong><?php print($wp_stats['num_users']-$people['matches']); ?></strong> WP Users, <strong><?php print($wp_stats['num_sites']-$groups['matches']); ?></strong> Sites</p>
                         <p>Unmatched: <strong><?php print($m_stats['num_contacts']-$people['matches']); ?></strong> Mautic Contacts,  <strong><?php print($m_stats['num_segments']-$groups['matches']); ?></strong> Segments</p>
                     </td>
                 </tr>

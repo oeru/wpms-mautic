@@ -12,7 +12,7 @@ class MauticHooks extends MauticClient {
     // initialise the hook methods
     public function register_hooks() {
         // register the hook methods
-        add_action('wpmu_new_blog', array($this, 'add_site'));
+        add_action('wpmu_new_blog', array($this, 'add_site'), 10, 6);
 
     }
 

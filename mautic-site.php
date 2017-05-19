@@ -1,10 +1,6 @@
 <?php
-//include_once 'mautic-app.php';
-
 /*
- *  Provides per-site Mautic Sync integration
- *  limits the context of actions to a particular site in a multi-site
- *  implementation.
+ *  Syncs an existing WP Multisite and Mautic install.
  */
 
 /* Load WordPress Administration Bootstrap */
