@@ -2,38 +2,11 @@
 // and https://pippinsplugins.com/using-ajax-your-plugin-wordpress-admin/
 
 jQuery(document).ready(function() {
-    console.log('mautic-auth', mautic_auth);
+    console.log('mautic-catchup', mautic_catchup);
 
     var $ = jQuery;
 
     $('#mautic-userstatus').text('Ready...');
-
-    $('#mautic-auth').validate({
-        validClass: "valid",
-        rules: {
-            'mautic-url': {
-                required: true,
-                url: true
-            },
-            'mautic-user': {
-                required: true
-            },
-            'mautic-password': {
-                required: true
-            }
-        },
-        messages: {
-            'mautic-url': {
-                required: "You must enter a valid web address (URL) for your Mautic API endpoint."
-            },
-            'mautic-user': {
-                required: "You must enter the username of a user able to access your Mautic API. (case sensitive)"
-            },
-            'mautic-password': {
-                required: "You must enter the password for the Mautic API user. (case sensitive)"
-            }
-        }
-    });
 
     // handle (re)load of the page
     $(window).on('load', function() {
@@ -47,26 +20,20 @@ jQuery(document).ready(function() {
         c = e.which ? e.which : e.keyCode;
         console.log('input: ' + c);
         if (c == 13) {
-            $('#mautic-auth-form').submit();
+            $('#mautic-sync-form').submit();
             return false;
         }
     });
 
     // handle the submit button being pushed
-    $('#mautic-auth-form').submit(function() {
-        // disable the submit button until it returns.
-        $('#mautic-submit').attr('disabled', true);
-        $('#mautic-userstatus').html('Processing...');
+    $('#mautic-catchup').submit(function() {
         $.ajax({
             type: 'POST',
             dataType: 'json',
-            url: mautic_auth.ajaxurl,
+            url: mautic_sync_ajax.ajaxurl,
             data: {
-                'action': 'mautic_submit',
-                'nonce-submit' : mautic_auth.submit_nonce,
-                'url' : $.trim($('#mautic-url').val()),
-                'user' : $.trim($('#mautic-user').val()),
-                'password' : $.trim($('#mautic-password').val())
+                'action': 'mautic_catchup',
+                'mautic-catchup-nonce' : mautic_catchup_ajax.catchup_nonce,
             },
             success: function(data) {
                 var msg = '';
@@ -75,12 +42,12 @@ jQuery(document).ready(function() {
                     // strip links out
                     msg = data.message.replace(/<a[^>]*>[^<]*<\/a>/g, '');
                     console.log('Success msg', msg);
-                    $('#mautic-submit').attr('disabled', false);
+                    $('#mautic-catchup').attr('disabled', false);
                     $('#mautic-userstatus').html(msg);
                 } else if (data.hasOwnProperty('error')) {
                     msg = data.message;
                     console.log('message:', msg);
-                    $('#mautic-submit').attr('disabled', false);
+                    $('#mautic-catchup').attr('disabled', false);
                     $('#mautic-userstatus').html(msg);
                 }
                 return true;

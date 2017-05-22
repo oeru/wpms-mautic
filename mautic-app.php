@@ -49,7 +49,7 @@ define('MAUTIC_ADMIN_MENU', 'Mautic Sync Settings');
 define('MAUTIC_API_ENDPOINT', 'api');
 //// turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
-define('MAUTIC_DEBUG', false);
+//define('MAUTIC_DEBUG', false);
 
 // include Mautic API and Auth code
 include_once MAUTIC_PATH . '/vendor/autoload.php';

@@ -2,7 +2,7 @@
 // and https://pippinsplugins.com/using-ajax-your-plugin-wordpress-admin/
 
 jQuery(document).ready(function() {
-    console.log('mautic-site-sync', mautic_site_sync_ajax);
+    console.log('mautic-site', mautic_site);
 
     var $ = jQuery;
 
@@ -26,17 +26,15 @@ jQuery(document).ready(function() {
     });
 
     // handle the submit button being pushed
-    $('#mautic-site-sync').submit(function() {
+    $('#mautic-site').submit(function() {
         $.ajax({
             type: 'POST',
             dataType: 'json',
-            url: mautic_sync_ajax.ajaxurl,
+            url: mautic_site.ajaxurl,
             data: {
                 'action': 'mautic_submit',
-                'nonce-submit' : mautic_site_sync_ajax.submit_nonce,
-                'url' : $.trim($('#mautic-url').val()),
-                'user' : $.trim($('#mautic-user').val()),
-                'password' : $.trim($('#mautic-password').val())
+                'nonce-segment' : mautic_site.segment_nonce,
+                'nonce-contact' : mautic_site.contact_nonce,
             },
             success: function(data) {
                 var msg = '';
@@ -45,12 +43,12 @@ jQuery(document).ready(function() {
                     // strip links out
                     msg = data.message.replace(/<a[^>]*>[^<]*<\/a>/g, '');
                     console.log('Success msg', msg);
-                    $('#mautic-submit').attr('disabled', false);
+                    $('#mautic-create-segment').attr('disabled', false);
                     $('#mautic-userstatus').html(msg);
                 } else if (data.hasOwnProperty('error')) {
                     msg = data.message;
                     console.log('message:', msg);
-                    $('#mautic-submit').attr('disabled', false);
+                    $('#mautic-create-segment').attr('disabled', false);
                     $('#mautic-userstatus').html(msg);
                 }
                 return true;

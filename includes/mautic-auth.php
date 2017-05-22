@@ -58,16 +58,16 @@ class MauticAuth extends MauticBase {
         // this is a dependence of the admin-ajax.js script
         wp_enqueue_script( 'jquery-validate');
         // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-        wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/admin-ajax.js', array(
+        wp_enqueue_script( 'mautic-auth', MAUTIC_URL.'app/js/admin-ajax.js', array(
             'jquery',
             'jquery-form'
         ));
-        wp_localize_script( 'mautic-ajax-request', 'mautic_sync_ajax', array(
+        wp_localize_script( 'mautic-auth', 'mautic_auth', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'submit_nonce' => wp_create_nonce( 'mautic-submit-nonse'),
             'auth_nonce' => wp_create_nonce( 'mautic-auth-nonse'),
         ));
-        add_action( 'wp_ajax_mautic_submit', array($this, 'ajax_submit'));
+        add_action( 'wp_mautic_auth_submit', array($this, 'ajax_submit'));
     }
 
     // Print the menu page itself
@@ -78,13 +78,13 @@ class MauticAuth extends MauticBase {
         } else {
             $this->log('need to get valid auth details');
         }
-        $nonce_submit= wp_create_nonce('mautic-submit');
+        //$nonce_submit = wp_create_nonce('mautic-submit');
         //$this->log('creating form');
         ?>
-        <div class="wrap" id="mautic_sync_ajax">
+        <div class="wrap" id="mautic_auth">
             <h2>Mautic Synchronisation Settings</h2>
             <!-- <form method="post" action="options.php"> -->
-            <form method="post" action="" id="mautic-sync-form">
+            <form method="post" action="" id="mautic-auth-form">
                 <table class="form-table">
                     <tr valign="top">
                         <th scope="row">Mautic API Address (URL)</th>
@@ -111,7 +111,7 @@ class MauticAuth extends MauticBase {
                 <p class="submit">
                     <input type="submit" id="mautic-submit" class="button-primary" value="Save Changes" />
                     <!--<input type="button" id="mautic-auth" class="button-secondary" value="Authenticate" />-->
-                    <input type="hidden" id="mautic-submit-nonce" value="<?php echo $nonce_submit; ?>" />
+                    <!--<input type="hidden" id="mautic-submit-nonce" value="<?php echo $nonce_submit; ?>" />-->
                 </p>
                 <p id="mautic-userstatus" style="color: red">&nbsp;</p>
             </form>

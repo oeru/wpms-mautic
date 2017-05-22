@@ -50,21 +50,36 @@ class MauticSync extends MauticHooks {
 
     public function site_init($id = '1') {
         $this->log('in site_init, id = '. $id);
-        // also , so includes jquery-validate
-        wp_enqueue_script( 'mautic-ajax-request', MAUTIC_URL.'app/js/site-ajax.js', array(
+        // set up appropriate ajax js file
+        wp_enqueue_script( 'mautic-site-ajax-request', MAUTIC_URL.'app/js/site-ajax.js', array(
             'jquery',
             'jquery-form'
         ));
         // declare the URL to the file that handles the AJAX request
         // (wp-admin/admin-ajax.php)
-        wp_localize_script( 'mautic-ajax-request', 'mautic_sync_ajax', array(
-            'ajaxurl' => admin_url( 'site-ajax.php' ),
+        wp_localize_script( 'mautic-site-ajax-request', 'mautic_site', array(
+            'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'segment_nonce' => wp_create_nonce( 'mautic-segment-nonse'),
-            'contacts_nonce' => wp_create_nonce( 'mautic-contact-nonse'),
+            'contact_nonce' => wp_create_nonce( 'mautic-contact-nonse')
         ));
         $this->site_tab($id);
     }
 
+    public function catchup_init() {
+        $this->log('in catchup_init');
+        // set up appropriate ajax js file
+        wp_enqueue_script( 'mautic-catchup-ajax-request', MAUTIC_URL.'app/js/catchup-ajax.js', array(
+            'jquery',
+            'jquery-form'
+        ));
+                // declare the URL to the file that handles the AJAX request
+        // (wp-admin/admin-ajax.php)
+        wp_localize_script( 'mautic-catchup-ajax-request', 'mautic_catchup', array(
+            'ajaxurl' => admin_url( 'admin-ajax.php' ),
+            'catchup_nonce' => wp_create_nonce( 'mautic-catchup-nonse')
+        ));
+        add_action( 'wp_mautic_catchup', array($this, 'catchup_submit'));
+    }
 
     // Add settings menu entry and various other sub pages
     public function add_network_pages() {
@@ -114,10 +129,10 @@ class MauticSync extends MauticHooks {
         $m_stats = $this->mautic->get_stats();
         $people = $this->get_people();
         $groups = $this->get_groups();
-        $remediate_path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-remediate.php';
+        $catchup_path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-catchup.php';
         $settings_path =  '/wp-admin/network/admin.php?page='.MAUTIC_ADMIN_SLUG;
         ?>
-        <div class="wrap" id="mautic-sync-status">
+        <div class="wrap" id="mautic-site">
             <h2>Mautic Synchronisation</h2>
             <p>The purpose of this plugin is to allow the synchronisation
             between WordPress users on this site and Mautic "contacts". </p>
@@ -131,7 +146,7 @@ class MauticSync extends MauticHooks {
             <a href="/wp-admin/network/sites.php">site's administration page</a>.
             </p>
             <p>After <a href="<?php echo $settings_path; ?>">configuring your Mautic authentication</a> details, if you're adding Mautic integration to an existing Wordpress
-                Multisite, you will probably want to perform an <a href="<?php echo $remediate_path; ?>">initial synchronisation</a>.</p>
+                Multisite, you will probably want to perform an <a href="<?php echo $catchup_path; ?>">initial synchronisation</a>.</p>
             <table class="sync-table">
                 <tr><th colspan=2 class="title">Mautic Sync Statistics</th>
                 <tr>
@@ -397,4 +412,40 @@ class MauticSync extends MauticHooks {
         $this->auth->deactivate;
     }*/
 
+    // initially bring a site up to speed by syncing existing content
+    // with a Mautic instance!
+    public function catchup() {
+        $this->log('in catchup!!');
+        // check if this has been run before
+        $setting = 'mautic_catchup';
+        if (!get_option($setting) || get_option($setting) == false) {
+            $this->catchup_init();
+            $catchup_nonce = wp_create_nonce('mautic-catchup');
+            ?>
+            <div class="wrap" id="mautic_catchup"
+            <form method="post" action="" id="mautic-catchup-form">
+                <p>This site requires remediation!</p>
+                <p class="submit">
+                    <input type="submit" id="mautic-submit" class="button-primary" value="Catch Up" />
+                    <input type="hidden" id="mautic-submit-nonce" value="<?php echo $catchup_nonce; ?>" />
+                </p>
+            </form>
+            <?php
+            // get a list of Sites and create equivalent Segments in
+            // Mautic for any not aleady there.
+
+            // Once run successfully, set a variable to
+            // avoid running again.
+            //return update_option($setting, true);
+        } else {
+            ?>
+            <p><strong>This site has already been catchupd!</strong></p>
+            <?php
+            // this can be removed when this code works (correctly catchups)
+            if (MAUTIC_DEBUG) {
+                //return update_option($setting, false);
+            }
+        }
+        return false;
+    }
 }

@@ -216,5 +216,4 @@ class MauticClient extends MauticAuth {
         }
         return false;
     }
-
 }
