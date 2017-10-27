@@ -44,7 +44,11 @@ define('MAUTIC_MENU', 'Mautic Sync');
 // admin details
 define('MAUTIC_ADMIN_SLUG', 'mautic_settings');
 define('MAUTIC_ADMIN_TITLE', 'Mautic Synchronisation Settings');
-define('MAUTIC_ADMIN_MENU', 'Mautic Sync Settings');
+define('MAUTIC_ADMIN_MENU', 'Mautic Settings');
+// catchup details
+define('MAUTIC_CATCHUP_SLUG', 'mautic_catchup');
+define('MAUTIC_CATCHUP_TITLE', 'Mautic Synchronisation Catch Up');
+define('MAUTIC_CATCHUP_MENU', 'Mautic Catch Up');
 // api endpoint
 define('MAUTIC_API_ENDPOINT', 'api');
 //// turn on debugging with true, off with false

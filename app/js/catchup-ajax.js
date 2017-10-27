@@ -20,7 +20,7 @@ jQuery(document).ready(function() {
         c = e.which ? e.which : e.keyCode;
         console.log('input: ' + c);
         if (c == 13) {
-            $('#mautic-sync-form').submit();
+            $('#mautic-catchup-form').submit();
             return false;
         }
     });
@@ -30,10 +30,10 @@ jQuery(document).ready(function() {
         $.ajax({
             type: 'POST',
             dataType: 'json',
-            url: mautic_sync_ajax.ajaxurl,
+            url: mautic_catchup.ajaxurl,
             data: {
                 'action': 'mautic_catchup',
-                'mautic-catchup-nonce' : mautic_catchup_ajax.catchup_nonce,
+                'mautic-catchup-nonce' : mautic_catchup.catchup_nonce,
             },
             success: function(data) {
                 var msg = '';

@@ -41,7 +41,7 @@ class MauticSync extends MauticHooks {
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_network_pages'));
         // add our updated links to the site nav links array via the filter
-        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
+        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'), $links);
         // register all relevant hooks
         $this->register_hooks();
         // create other necessary objects
@@ -62,6 +62,7 @@ class MauticSync extends MauticHooks {
             'segment_nonce' => wp_create_nonce( 'mautic-segment-nonse'),
             'contact_nonce' => wp_create_nonce( 'mautic-contact-nonse')
         ));
+        add_action( 'wp_ajax_mautic_site', array($this, 'site_submit'));
         $this->site_tab($id);
     }
 
@@ -78,7 +79,7 @@ class MauticSync extends MauticHooks {
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'catchup_nonce' => wp_create_nonce( 'mautic-catchup-nonse')
         ));
-        add_action( 'wp_mautic_catchup', array($this, 'catchup_submit'));
+        add_action( 'wp_ajax_mautic_catchup', array($this, 'catchup_submit'));
     }
 
     // Add settings menu entry and various other sub pages
@@ -87,6 +88,9 @@ class MauticSync extends MauticHooks {
         // no op right now....
         add_menu_page(MAUTIC_TITLE, MAUTIC_MENU,
             'manage_options', MAUTIC_SLUG, array($this, 'sync_page'));
+        add_submenu_page(MAUTIC_SLUG, MAUTIC_CATCHUP_TITLE,
+            MAUTIC_CATCHUP_MENU, 'manage_options', MAUTIC_CATCHUP_SLUG,
+            array($this, 'catchup_page'));
     }
 
     // Print the menu page itself, with tab navigation
@@ -129,7 +133,7 @@ class MauticSync extends MauticHooks {
         $m_stats = $this->mautic->get_stats();
         $people = $this->get_people();
         $groups = $this->get_groups();
-        $catchup_path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-catchup.php';
+        $catchup_path =  '/wp-admin/network/admin.php?page='.MAUTIC_CATCHUP_SLUG;;
         $settings_path =  '/wp-admin/network/admin.php?page='.MAUTIC_ADMIN_SLUG;
         ?>
         <div class="wrap" id="mautic-site">
@@ -146,7 +150,7 @@ class MauticSync extends MauticHooks {
             <a href="/wp-admin/network/sites.php">site's administration page</a>.
             </p>
             <p>After <a href="<?php echo $settings_path; ?>">configuring your Mautic authentication</a> details, if you're adding Mautic integration to an existing Wordpress
-                Multisite, you will probably want to perform an <a href="<?php echo $catchup_path; ?>">initial synchronisation</a>.</p>
+                Multisite, you will probably want to perform an <a href="<?php echo $catchup_path; ?>">initial catch up</a>.</p>
             <table class="sync-table">
                 <tr><th colspan=2 class="title">Mautic Sync Statistics</th>
                 <tr>
@@ -382,23 +386,11 @@ class MauticSync extends MauticHooks {
         return $groups;
     }
 
-    // create the array of tabs to include Mautic Sync per Site
-    // NOTE: this will need to be updated if the functionality in
-    // default WP is updated!!
-    public function insert_site_nav_link() {
+    // add our Mautic Sync per Site tab to the Site Edit Nav
+    public function insert_site_nav_link($links) {
         $path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-site.php';
-        $links = array(
-            'site-info' => array('label' => __('Info'),
-                'url' => 'site-info.php', 'cap' => 'manage_sites'),
-            'site-users' => array('label' => __('Users'),
-                'url' => 'site-users.php', 'cap' => 'manage_sites'),
-            'site-mautic-sync' => array('label' => __('Mautic Sync'),
-                'url' => $path, 'cap' => 'manage_sites'),
-            'site-themes' => array('label' => __('Themes'),
-                'url' => 'site-themes.php', 'cap' => 'manage_sites'),
-            'site-settings' => array( 'label' => __('Settings'),
-                'url' => 'site-settings.php', 'cap' => 'manage_sites')
-        );
+        $links['site-mautic-sync'] =  array('label' => __('Mautic Sync'),
+            'url' => $path, 'cap' => 'manage_sites');
         return $links;
     }
 
@@ -414,22 +406,33 @@ class MauticSync extends MauticHooks {
 
     // initially bring a site up to speed by syncing existing content
     // with a Mautic instance!
-    public function catchup() {
+    public function catchup_page() {
         $this->log('in catchup!!');
+
+        // @TODO we should probably check if this site has valid
+        // Mautic site credentials and direct the admin to set them
+        // if not!!
+
         // check if this has been run before
         $setting = 'mautic_catchup';
         if (!get_option($setting) || get_option($setting) == false) {
             $this->catchup_init();
             $catchup_nonce = wp_create_nonce('mautic-catchup');
             ?>
-            <div class="wrap" id="mautic_catchup"
-            <form method="post" action="" id="mautic-catchup-form">
-                <p>This site requires remediation!</p>
-                <p class="submit">
-                    <input type="submit" id="mautic-submit" class="button-primary" value="Catch Up" />
-                    <input type="hidden" id="mautic-submit-nonce" value="<?php echo $catchup_nonce; ?>" />
-                </p>
-            </form>
+            <div class="wrap" id="mautic_catchup">
+                <h1 id="edit-site"><?php echo MAUTIC_CATCHUP_TITLE; ?></h1>
+                <p>This page initiates the synchronisation of an existing WordPress Multisite instance with a Mautic instance.</p>
+                <p>It creates a Mautic Segment for each WP Site, creates an equivalent Mautic Contact for each WP User, and based on their Site membership, associates them with the relevant Mautic Segment.</p>
+                <p>After running it once, this plugin will maintain synchronisation as new Sites and Users are added/removed and associations between them change over time. <strong>This script should not be run on a site more than once</strong>! (unless you know what you are doing...), as it will pollute subsequent ongoing synchronisation provided by this plugin.</p>
+                <form method="post" action="" id="mautic-catchup-form">
+                    <p>This site requires a catch up!</p>
+                    <p class="submit">
+                        <input type="submit" id="mautic-submit" class="button-primary" value="Catch Up" />
+                        <input type="hidden" id="mautic-catchup-nonce" value="<?php echo $catchup_nonce; ?>" />
+                    </p>
+                    <p id="mautic-userstatus" style="color: red">&nbsp;</p>
+                </form>
+            </div>
             <?php
             // get a list of Sites and create equivalent Segments in
             // Mautic for any not aleady there.
@@ -447,5 +450,13 @@ class MauticSync extends MauticHooks {
             }
         }
         return false;
+    }
+
+    // ajax function
+    public function catchup_submit() {
+        $this->log('in catchup_submit:'.print_r($_POST, true));
+        if ( ! wp_verify_nonce( $_POST['mautic-catchup-nonce'], 'mautic-catchup-nonce') ) {
+            die ("Busted - someone's trying something funny in submit!");
+        }
     }
 }

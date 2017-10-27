@@ -25,8 +25,18 @@ class MauticAuth extends MauticBase {
         // create this object
         add_action('init', array($this, 'init'));
         // Admin sub-menu
-        add_action('admin_init', array($this, 'admin_init'));
-        $this->log('finished adding admin_init');
+        //$this->log('_GET: '.print_r($_GET,true));
+        //$this->log('_POST: '.print_r($_POST,true));
+        // make sure we initialise the auth if either of these
+        // cases is true - the first is when someone goes to the page
+        // the second is if they submit the Ajax Submit...
+        if ($_GET['page'] == MAUTIC_ADMIN_SLUG || $_POST['action'] == 'mautic_submit') {
+            $this->log('on '.MAUTIC_ADMIN_SLUG);
+            add_action('admin_init', array($this, 'auth_init'));
+        } else {
+            $this->log('not on '.MAUTIC_ADMIN_SLUG);
+        }
+        //$this->log('finished adding auth_init');
     }
 
     // do smart stuff when this object is instantiated.
@@ -53,35 +63,44 @@ class MauticAuth extends MauticBase {
     }
 
     // White list our options using the Settings API
-    public function admin_init() {
-        $this->log('in MauticAuth->admin_init');
-        // this is a dependence of the admin-ajax.js script
+    public function auth_init() {
+        $this->log('in MauticAuth->auth_init');
+
+        $this->log('on auth page: '.MAUTIC_ADMIN_SLUG);
+        // this is a dependence of the auth-ajax.js script
         wp_enqueue_script( 'jquery-validate');
-        // declare the URL to the file that handles the AJAX request (wp-admin/admin-ajax.php)
-        wp_enqueue_script( 'mautic-auth', MAUTIC_URL.'app/js/admin-ajax.js', array(
+        wp_enqueue_script( 'mautic-auth-script', MAUTIC_URL.'app/js/auth-ajax.js', array(
             'jquery',
-            'jquery-form'
+            'jquery-form',
+            'jquery-validate'
         ));
-        wp_localize_script( 'mautic-auth', 'mautic_auth', array(
+        // declare the URL to the AJAX request handler (wp-admin/admin-ajax.php)
+        wp_localize_script( 'mautic-auth-script', 'mautic_auth', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'submit_nonce' => wp_create_nonce( 'mautic-submit-nonse'),
             'auth_nonce' => wp_create_nonce( 'mautic-auth-nonse'),
         ));
-        add_action( 'wp_mautic_auth_submit', array($this, 'ajax_submit'));
+        // note, have to use wp_ajax_[action] - see
+        // https://codex.wordpress.org/AJAX_in_Plugins
+        add_action( 'wp_ajax_mautic_submit', array($this, 'ajax_submit'));
+        $this->log('added mautic_submit action');
     }
 
     // Print the menu page itself
     public function ajax_auth_page() {
+        $this->log('on auth page: '. $GET['page']);
+        // load the relevant scripts.
+        //$this->auth_init();
         $settings = $this->get_settings();
         if ($this->has_auth_details()) {
             $this->log('has valid auth details');
         } else {
             $this->log('need to get valid auth details');
         }
-        //$nonce_submit = wp_create_nonce('mautic-submit');
+        $nonce_submit = wp_create_nonce('mautic-submit');
         //$this->log('creating form');
         ?>
-        <div class="wrap" id="mautic_auth">
+        <div class="wrap" id="mautic-auth">
             <h2>Mautic Synchronisation Settings</h2>
             <!-- <form method="post" action="options.php"> -->
             <form method="post" action="" id="mautic-auth-form">
@@ -110,13 +129,13 @@ class MauticAuth extends MauticBase {
                 </table>
                 <p class="submit">
                     <input type="submit" id="mautic-submit" class="button-primary" value="Save Changes" />
-                    <!--<input type="button" id="mautic-auth" class="button-secondary" value="Authenticate" />-->
                     <!--<input type="hidden" id="mautic-submit-nonce" value="<?php echo $nonce_submit; ?>" />-->
                 </p>
                 <p id="mautic-userstatus" style="color: red">&nbsp;</p>
             </form>
         </div>
         <?php
+        $this->log('rendered auth form');
     }
 
     // called when the ajax form is successfully submitted
@@ -124,7 +143,8 @@ class MauticAuth extends MauticBase {
         $this->log('in ajax_submit: '.print_r($_POST, true));
         // check if the submitted nonce matches the generated nonce created in the auth_init functionality
         if ( ! wp_verify_nonce( $_POST['nonce-submit'], 'mautic-submit-nonse') ) {
-            die ("Busted - someone's trying something funny in submit!"); }
+            die ("Busted - someone's trying something funny in submit!");
+        }
 
         $this->log("saving settings");
 

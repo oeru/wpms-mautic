@@ -2,13 +2,13 @@
 // and https://pippinsplugins.com/using-ajax-your-plugin-wordpress-admin/
 
 jQuery(document).ready(function() {
-    console.log('mautic-auth', mautic_auth);
+    console.log('mautic-auth-form', mautic_auth);
 
     var $ = jQuery;
 
     $('#mautic-userstatus').text('Ready...');
 
-    $('#mautic-auth').validate({
+    $('#mautic-auth-form').validate({
         validClass: "valid",
         rules: {
             'mautic-url': {
@@ -37,6 +37,7 @@ jQuery(document).ready(function() {
 
     // handle (re)load of the page
     $(window).on('load', function() {
+
         console.log('in load');
         $('#mautic-submit').attr('disabled', false);
         $('#mautic-userstatus').html('Ready...');
@@ -57,6 +58,7 @@ jQuery(document).ready(function() {
         // disable the submit button until it returns.
         $('#mautic-submit').attr('disabled', true);
         $('#mautic-userstatus').html('Processing...');
+        console.log('url: ', mautic_auth.ajaxurl);
         $.ajax({
             type: 'POST',
             dataType: 'json',
