@@ -6,7 +6,7 @@ class MauticSync extends MauticHooks {
 
     protected static $instance = NULL; // this instance
     //protected $auth; // Auth object that allows access to the Mautic API
-    protected static $mautic; // Mautic API client object
+    protected $mautic; // Mautic API client object
     protected $tabs = array(
         'status' => 'Sync Status',
         /*'matched_sites' => 'Matched Sites',
@@ -41,7 +41,8 @@ class MauticSync extends MauticHooks {
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_network_pages'));
         // add our updated links to the site nav links array via the filter
-        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'), $links);
+        //add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'), $links);
+        add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
         // register all relevant hooks
         $this->register_hooks();
         // create other necessary objects
@@ -187,7 +188,7 @@ class MauticSync extends MauticHooks {
     public function site_tab($site_id) {
         // get the site's name:
         $site = get_site($site_id);
-        $site_name = $this->get_site_name($site);
+        $site_name = $this->get_site_tag($site);
         $this->log('site: '.print_r($site, true));
 
         $this->log('site_tab');
@@ -359,7 +360,7 @@ class MauticSync extends MauticHooks {
         $this->log(count($wp_sites).' sites retrieved.');
         foreach ($wp_sites as $site) {
             //$this->log('site: '. print_r($site, true));
-            $name = $this->get_site_name($site);
+            $name = $this->get_site_tag($site);
             //$this->log('site name: '. $name);
             $groups[$name]['wp'] = $site->blog_id;
             $groups[$name]['site'] = $site;
@@ -394,8 +395,8 @@ class MauticSync extends MauticHooks {
         return $links;
     }
 
-    // given a site object, return the site's name
-    public function get_site_name($site) {
+    // given a site object, return the site's tag/name
+    public function get_site_tag($site) {
         return strtolower(substr($site->path,1,-1));
     }
     // clean up if this plugin is deactivated.

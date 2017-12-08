@@ -30,7 +30,7 @@ class MauticAuth extends MauticBase {
         // make sure we initialise the auth if either of these
         // cases is true - the first is when someone goes to the page
         // the second is if they submit the Ajax Submit...
-        if ($_GET['page'] == MAUTIC_ADMIN_SLUG || $_POST['action'] == 'mautic_submit') {
+        if ((isset($_GET['page']) && $_GET['page'] == MAUTIC_ADMIN_SLUG) || (isset( $_POST['action']) && $_POST['action'] == 'mautic_submit')) {
             $this->log('on '.MAUTIC_ADMIN_SLUG);
             add_action('admin_init', array($this, 'auth_init'));
         } else {
