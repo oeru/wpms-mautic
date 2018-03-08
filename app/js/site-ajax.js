@@ -61,4 +61,42 @@ jQuery(document).ready(function() {
         // if nothing else returns this first, there was a problem...
         return false;
     });
+    $('#mautic-create-segment').submit(function() {
+        console.log('clicked Create Segment');
+        $.ajax({
+            type: 'POST',
+            dataType: 'json',
+            url: mautic_site.ajaxurl,
+            data: {
+                'action': 'mautic_create_segment',
+                'site_id': $('mautic-current-site').value,
+                'site_name': $('mautic-current-sitename').value,
+                'nonce-segment' : mautic_site.segment_nonce,
+                'nonce-contact' : mautic_site.contact_nonce,
+            },
+            success: function(data) {
+                var msg = '';
+                console.log('Success: data: ', data);
+                if (data.hasOwnProperty('success')) {
+                    // strip links out
+                    msg = data.message.replace(/<a[^>]*>[^<]*<\/a>/g, '');
+                    console.log('Success msg', msg);
+                    $('#mautic-create-segment').attr('disabled', false);
+                    $('#mautic-userstatus').html(msg);
+                } else if (data.hasOwnProperty('error')) {
+                    msg = data.message;
+                    console.log('message:', msg);
+                    $('#mautic-create-segment').attr('disabled', false);
+                    $('#mautic-userstatus').html(msg);
+                }
+                return true;
+            },
+            failure: function() {
+                console.log('Failure: data: ', data);
+                $('#mautic-userstatus').text('Error!');
+            }
+        });
+        // if nothing else returns this first, there was a problem...
+        return false;
+    });
 });

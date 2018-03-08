@@ -37,7 +37,7 @@ class MauticSync extends MauticHooks {
     // Do smart stuff when this object is instantiated.
     public function init() {
         //MauticAuth::init();
-        $this->log('in init');
+        $this->log('in MauticSync init');
         // create this object's menu items
         add_action('network_admin_menu', array($this, 'add_network_pages'));
         // add our updated links to the site nav links array via the filter
@@ -45,6 +45,7 @@ class MauticSync extends MauticHooks {
         add_filter('network_edit_site_nav_links', array($this, 'insert_site_nav_link'));
         // register all relevant hooks
         $this->register_hooks();
+        $this->catchup_init();
         // create other necessary objects
         $this->mautic = new MauticClient();
     }
@@ -63,7 +64,8 @@ class MauticSync extends MauticHooks {
             'segment_nonce' => wp_create_nonce( 'mautic-segment-nonse'),
             'contact_nonce' => wp_create_nonce( 'mautic-contact-nonse')
         ));
-        add_action( 'wp_ajax_mautic_site', array($this, 'site_submit'));
+        //add_action( 'wp_ajax_mautic_site', array($this, 'site_submit'));
+        add_action( 'wp_ajax_mautic_create_segment', array($this, 'create_segment_for_site'));
         $this->site_tab($id);
     }
 
@@ -221,6 +223,8 @@ class MauticSync extends MauticHooks {
                         <th  class="label">No corresponding Mautic Segment</th>
                         <td colspan=2><p class="submit">
                             <input type="button" id="mautic-create-segment" class="button-primary" value="Create Segment"/>
+                            <input type="hidden" id="mautic-current-site" value="<?php echo $site_id; ?>"/>
+                            <input type="hidden" id="mautic-current-sitename" value="<?php echo $site_name; ?>"/>
                         </p></td>
                     </tr>
                     <?php
@@ -419,22 +423,25 @@ class MauticSync extends MauticHooks {
         if (!get_option($setting) || get_option($setting) == false) {
             $this->catchup_init();
             $catchup_nonce = wp_create_nonce('mautic-catchup');
+            $this->log("catchup_nonce: ". $catchup_nonce);
             ?>
             <div class="wrap" id="mautic_catchup">
                 <h1 id="edit-site"><?php echo MAUTIC_CATCHUP_TITLE; ?></h1>
                 <p>This page initiates the synchronisation of an existing WordPress Multisite instance with a Mautic instance.</p>
                 <p>It creates a Mautic Segment for each WP Site, creates an equivalent Mautic Contact for each WP User, and based on their Site membership, associates them with the relevant Mautic Segment.</p>
-                <p>After running it once, this plugin will maintain synchronisation as new Sites and Users are added/removed and associations between them change over time. <strong>This script should not be run on a site more than once</strong>! (unless you know what you are doing...), as it will pollute subsequent ongoing synchronisation provided by this plugin.</p>
+                <p>Use with care! It is <em>probably</em> safe to run this multiple times, although it may overwrite manual changes made to Contacts who are also WordPress users. It might also create
+                    additional Segments in addition to any manually created Site corresponding Segments that don't use the appropriate naming convention.</p>
                 <form method="post" action="" id="mautic-catchup-form">
                     <p>This site requires a catch up!</p>
                     <p class="submit">
-                        <input type="submit" id="mautic-submit" class="button-primary" value="Catch Up" />
+                        <input type="submit" id="mautic-catchup-submit" class="button-primary" value="Catch Up" />
                         <input type="hidden" id="mautic-catchup-nonce" value="<?php echo $catchup_nonce; ?>" />
                     </p>
                     <p id="mautic-userstatus" style="color: red">&nbsp;</p>
                 </form>
             </div>
             <?php
+            $this->log('catchup form completed');
             // get a list of Sites and create equivalent Segments in
             // Mautic for any not aleady there.
 
@@ -443,7 +450,7 @@ class MauticSync extends MauticHooks {
             //return update_option($setting, true);
         } else {
             ?>
-            <p><strong>This site has already been catchupd!</strong></p>
+            <p><strong>This site has already been caught up!</strong></p>
             <?php
             // this can be removed when this code works (correctly catchups)
             if (MAUTIC_DEBUG) {
@@ -456,8 +463,24 @@ class MauticSync extends MauticHooks {
     // ajax function
     public function catchup_submit() {
         $this->log('in catchup_submit:'.print_r($_POST, true));
-        if ( ! wp_verify_nonce( $_POST['mautic-catchup-nonce'], 'mautic-catchup-nonce') ) {
+        /*if ( ! wp_verify_nonce( $_POST['mautic-catchup-nonce'], 'mautic-catchup') ) {
+            $this->log('nonce not verified!');
             die ("Busted - someone's trying something funny in submit!");
-        }
+        } else {*/
+            $this->log('valid request for catchup...');
+            $person = array(
+                'firstname' => 'test',
+                'lastname' => 'user',
+                'country' => 'NZ',
+                'email' => 'devtest@sound.org.nz',
+                'ipAddress' => '127.0.0.1',
+            );
+            if ($person = $this->create_contact($person)) {
+                $this->log('created user!');
+                $this->remove_contact($person);
+            } else  {
+                $this->log('failed to create user.');
+            }
+        //}
     }
 }

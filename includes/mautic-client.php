@@ -197,6 +197,94 @@ class MauticClient extends MauticAuth {
     // get the contacts in a segment
     public function get_contacts_for_segment($segment_id, $contacts) {
     }
+
+    // create a new segment for a site
+    public function create_segment_for_site() {
+        $this->log("in create_segment, with data: ". print_r($data, true));
+    }
+
+    public function get_contact_by_email($person) {
+        $email = $person['email'];
+        $this->log('contact email: '. $email);
+        if ($contactApi = $this->init_api('contacts')) {
+            $searchFilter = 'email:'.$email; // initialise
+            $this->log('searchFilter: '.$searchFilter);
+            $contact = $contactApi->getList($searchFilter,0,1,
+                '','',true,true);
+            if ($contact['total'] == 1) {
+                $this->log('contact info: '.print_r($contact, true));
+                if (!$this->api_error($contact)) {
+                    $person = array();
+                    $person['m_id'] = $contact['id'];
+                    $person['m_name'] = $contact['fields']['core']['firstname']['value'].' '.
+                        $contact['fields']['core']['lastname']['value'];
+                    return $person;
+                }
+            } else if ($contact['total'] > 1) {
+                $this->log('Multiple contacts returned for email: '.$email.'!!');
+            }
+        }
+        return false;
+    }
+
+    // supply a "person" - with ['email'] at a minimum
+    public function create_contact($person) {
+        if ($contactApi = $this->init_api('contacts')) {
+            // create a test contact
+            if (! $person['email']) {
+                $this->log('email is required');
+                return false;
+            }
+            if (! $person = $this->get_contact_by_email($person)) {
+                $fields = $contactApi->getFieldList();
+                //$this->log('Fields for creating a contact: '. print_r($fields, true));
+                //$this->print_fields($fields, 'Contact fields');
+                $data = array(
+                    // these are field aliases, and values
+                    'email' => $person['email'],
+                    'firstname' => $person['firstname'],
+                    'lastname' => $person['lastname'],
+                    'country' => $person['country'],
+                    'ipAddress' => $person['ipAddress'],
+                );
+                if ($contact = $contactApi->create($data)) {
+                    $this->log('created contact! '. print_r($contact, true));
+                    //$contact = $response[$contactApi->itemName()];
+                    $this->print_fields($contact['contact']['fields'], 'Contact details');
+                    //$this->print_fields($contact->core, 'Contact core');
+                    return $contact;
+                } else {
+                    $this->log('creating contact failed');
+                }
+            } else {
+                $this->log('Contact with name ' .$person['m_name']. ' and email '
+                .$person['email']. ' already has a contact (' . $person['m_id'] . ')');
+                return $person;
+            }
+        }
+        return false;
+    }
+
+    // remove the contact based on $person['m_id']
+    public function remove_contact($person) {
+        if ($contactApi = $this->init_api('contacts')) {
+            // create a test contact
+            if (! $person['m_id']) {
+                $this->log('Mautic user id is required as \'m_id\'');
+                return false;
+            }
+            $name_txt = ($person['m_name']) ? " (" .$person['m_name']. ")" : '';
+            $this->log('removing contact '. $person['m_id']. $name_txt );
+            if ($response = $contactApi->delete($person['m_id'])) {
+                $this->log('Contact with name ' .$person['m_name']. ' and email '
+                .$person['email']. ' removed.' );
+                return $person;
+            }
+        }
+        return false;
+    }
+
+
     // handle API errors in a standard way
     protected function api_error($obj) {
         if (is_array($obj['errors'])) {
@@ -215,5 +303,13 @@ class MauticClient extends MauticAuth {
             return true;
         }
         return false;
+    }
+
+    // mostly for debugging - print out long sets of arrays for fields
+    private function print_fields($fields, $msg='') {
+        if ($msg != '') $this->log($msg.':');
+        foreach($fields as $id => $field) {
+            $this->log("field $id: ".print_r($field, true));
+        }
     }
 }

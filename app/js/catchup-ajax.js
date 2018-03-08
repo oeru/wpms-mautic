@@ -6,14 +6,14 @@ jQuery(document).ready(function() {
 
     var $ = jQuery;
 
-    $('#mautic-userstatus').text('Ready...');
-
     // handle (re)load of the page
     $(window).on('load', function() {
         console.log('in load');
-        $('#mautic-submit').attr('disabled', false);
+        $('#mautic-catchup-submit').attr('disabled', false);
         $('#mautic-userstatus').html('Ready...');
     });
+
+    $('#mautic-userstatus').text('Ready...');
 
     // set this up to submit on 'enter'
     $('input').keypress( function (e) {
@@ -26,7 +26,8 @@ jQuery(document).ready(function() {
     });
 
     // handle the submit button being pushed
-    $('#mautic-catchup').submit(function() {
+    $('#mautic-catchup-submit').click(function() {
+        console.log('Catchup submitted!');
         $.ajax({
             type: 'POST',
             dataType: 'json',
