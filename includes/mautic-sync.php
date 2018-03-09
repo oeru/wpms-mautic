@@ -1,6 +1,7 @@
 <?php
 
 include_once MAUTIC_PATH . '/includes/mautic-hooks.php';
+include_once MAUTIC_PATH . '/includes/country_picker.php';
 
 class MauticSync extends MauticHooks {
 
@@ -462,25 +463,109 @@ class MauticSync extends MauticHooks {
 
     // ajax function
     public function catchup_submit() {
+        global $wpdb, $country_picker;
+        $result = array();
+        $usermeta_table = "wp_usermeta";
+        $user_table = "wp_users";
+
         $this->log('in catchup_submit:'.print_r($_POST, true));
         /*if ( ! wp_verify_nonce( $_POST['mautic-catchup-nonce'], 'mautic-catchup') ) {
             $this->log('nonce not verified!');
             die ("Busted - someone's trying something funny in submit!");
         } else {*/
-            $this->log('valid request for catchup...');
-            $person = array(
-                'firstname' => 'test',
-                'lastname' => 'user',
-                'country' => 'NZ',
-                'email' => 'devtest@sound.org.nz',
-                'ipAddress' => '127.0.0.1',
-            );
-            if ($person = $this->create_contact($person)) {
-                $this->log('created user!');
-                $this->remove_contact($person);
-            } else  {
-                $this->log('failed to create user.');
+
+        // store the info for processing
+        $list = array();
+        // don't get the main site...
+        $args = array(
+            'site__not_in' => '1',
+        );
+        $sites = get_sites($args);
+        //$this->log('sites: '. print_r($sites, true));
+        // get the name
+        $parser = new FullNameParser();
+        foreach ($sites as $site) {
+            $site_id = $site->blog_id;
+            $site_tag = $this->get_site_tag($site);
+            //
+            // we're only looking to create a list for this course!
+            if ($site_tag != 'lida101') {
+                $this->log('skipping site "'.$site_tag.'"');
+                continue;
             }
-        //}
+            $this->log('site id: '.$site_id.', tag: '.$site_tag.'.');
+            $list[$site_id]['tag'] = $site_tag;
+            // get additional info about the blog
+            $site_info = get_blog_details($site_id);
+            $list[$site_id]['name'] = $site_info->blogname;
+            $this->log('Site name: '. $site_info->blogname);
+            // get the WP users for this site/course
+            $searchFilter = 'blog_id='.$site_id.
+                '&orderby=display_name&orderby=nicename';
+            $users = get_users($searchFilter);
+            foreach ($users as $user) {
+                $name = array();
+                $user_id = $user->ID;
+                //$this->log('site_info: '. print_r($site_info, true));
+                // get the user's country (if it's been set)
+                $country = get_user_meta($user_id, 'usercountry', true);
+                $this->log('User '.$user->display_name.' has country '.$country);
+                // parse the user's name!
+                $name = $parser->parse_name($user->display_name);
+                $list[$site_id]['users'][$user_id] = array(
+                    'username' => $user->user_nicename,
+                    'fullname' => $user->display_name,
+                    'firstname' => $name['fname'],
+                    'lastname' => $name['lname'],
+                    'email' => $user->user_email,
+                    'country' => $country,
+                    'ipAddress' => '127.0.0.1',
+                );
+            }
+        }
+        $start_date_long = 'Wed 14 March 2018';
+        $start_date_short = '20180314';
+        $this->log('##### starting processing of sites and users ######');
+        foreach($list as $site_id => $site) {
+            $this->log('Site '.quotemeta($site['name']).' ('.quotemeta($site['tag']).'): ');
+            $segment_name = quotemeta($site['name'].' starting '.$start_date_long);
+            $segment_alias = quotemeta($site['tag'].'-'.$start_date_short);
+            if ($segment = $this->has_segment($segment_alias)) {
+                $this->log('Segment "'.$segment_alias.'" exists:'.print_r($segment, true));
+            } else {
+                $this->log('Creating segment '.$segment_alias.'.');
+                if ($segment = $this->create_segment($segment_name, $segment_alias)) {
+                    $this->log('Segment '.$segment_alias.' created.');
+                } else {
+                    $this->log('Creating segment '.$segment_alias.' failed.');
+                }
+            }
+            foreach($site['users'] as $user) {
+                //$this->log('creating/modifying user: '. print_r($user, true));
+                $person = array(
+                    // these are field aliases, and values
+                    'email' => $user['email'],
+                    'ipAddress' => $user['ipAddress'],
+                );
+                // if there's no firstname, use the user's username
+                $person['firstname'] = ($user['firstname']) ? $user['firstname'] : $username;
+                // if there's no lastname, don't set one.
+                if (isset($user['lastname'])) $person['lastname'] = $user['lastname'];
+                // work out the full country name from the abbreviation, because
+                // Mautic doesn't store the abbreviation for some reason. So
+                // much for open standards *sigh*
+                // only include the country if the field is set.
+                if ($user['country'] != '') {
+                    $person['country'] = $country_picker[$user['country']];
+                    $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
+                }
+                $this->log('**** person to be made a contact: '.print_r($person, true));
+                // now make it happen in Mautic!
+                $contact = $this->create_contact($person);
+                //$this->log('segment: '.print_r($segment, true));
+                $this->log('adding user '.$contact['contact']['id'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
+                $this->add_contact_to_segment($contact['contact']['id'], $segment['id']);
+            }
+        }
     }
 }

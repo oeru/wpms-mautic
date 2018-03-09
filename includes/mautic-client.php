@@ -135,12 +135,12 @@ class MauticClient extends MauticAuth {
     }
 
     // create a new segment with the given name and short name (aka "tag")
-    public function create_segment($name, $tag) {
+    public function create_segment($name, $alias) {
         if ($segmentApi = $this->init_api('segments')) {
             $data = array(
-                'name'        => $name,
-                'alias'       => strtolower($tag),
-                'description' => 'Segment created to represent "'.$name.'" site.',
+                'name'        => stripslashes($name),
+                'alias'       => strtolower(stripslashes($alias)),
+                'description' => 'Segment created to represent "'.stripslashes($name).'" site.',
                 'isPublished' => 1
             );
             $segment = $segmentApi->create($data);
@@ -227,6 +227,25 @@ class MauticClient extends MauticAuth {
         return false;
     }
 
+    //
+    public function add_contact_to_segment($contact_id, $segment_id) {
+        if ($segmentApi = $this->init_api('segments')) {
+            $response = $segmentApi->addContact($segment_id, $contact_id);
+            if (!isset($response['success'])) {
+                $this->log('Failed to add user '.$contact_id.' to segment '
+                    .$segment_id.'.');
+                return false;
+            } else {
+                $this->log('Added user '.$contact_id.' to segment '
+                    .$segment_id.'.');
+                return true;
+            }
+        } else {
+            $this->log('failed to get a segments context!');
+            return false;
+        }
+    }
+
     // supply a "person" - with ['email'] at a minimum
     public function create_contact($person) {
         if ($contactApi = $this->init_api('contacts')) {
@@ -235,31 +254,27 @@ class MauticClient extends MauticAuth {
                 $this->log('email is required');
                 return false;
             }
-            if (! $person = $this->get_contact_by_email($person)) {
-                $fields = $contactApi->getFieldList();
-                //$this->log('Fields for creating a contact: '. print_r($fields, true));
-                //$this->print_fields($fields, 'Contact fields');
-                $data = array(
-                    // these are field aliases, and values
-                    'email' => $person['email'],
-                    'firstname' => $person['firstname'],
-                    'lastname' => $person['lastname'],
-                    'country' => $person['country'],
-                    'ipAddress' => $person['ipAddress'],
-                );
-                if ($contact = $contactApi->create($data)) {
-                    $this->log('created contact! '. print_r($contact, true));
-                    //$contact = $response[$contactApi->itemName()];
-                    $this->print_fields($contact['contact']['fields'], 'Contact details');
-                    //$this->print_fields($contact->core, 'Contact core');
-                    return $contact;
+            $data = array(
+                // these are field aliases, and values
+                'email' => $person['email'],
+                'firstname' => $person['firstname'],
+                'lastname' => $person['lastname'],
+                'country' => $person['country'],
+                'ipAddress' => $person['ipAddress'],
+            );
+            if ($response = $contactApi->create($data)) {
+                //$this->log('response: '. print_r($response, true));
+                $contact_id = $response['contact']['id']; // API user
+                $createIfNotFound = true;
+                if ($contact = $contactApi->edit($contact_id, $data, $createIfNotFound)) {
+                        //$this->log('Contact retrieved! '. print_r($contact, true));
+                        //$contact = $response[$contactApi->itemName()];
+                        //$this->print_fields($contact['contact']['fields'], 'Contact details');
+                        //$this->print_fields($contact->core, 'Contact core');
+                        return $contact;
                 } else {
-                    $this->log('creating contact failed');
+                        $this->log('creating contact failed');
                 }
-            } else {
-                $this->log('Contact with name ' .$person['m_name']. ' and email '
-                .$person['email']. ' already has a contact (' . $person['m_id'] . ')');
-                return $person;
             }
         }
         return false;
