@@ -1,7 +1,7 @@
 <?php
 
 // https://gist.github.com/vxnick/380904
-var $country_picker = array(
+$country_picker = array(
     'AF' => 'Afghanistan',
     'AX' => 'Aland Islands',
     'AL' => 'Albania',
