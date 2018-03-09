@@ -1,5 +1,6 @@
 {
     "require": {
-        "mautic/api-library": "^2.4"
+        "mautic/api-library": "^2.4",
+        "joshfraser/php-name-parser": "dev-master"
     }
 }
