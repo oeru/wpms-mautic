@@ -545,8 +545,41 @@ class MauticSync extends MauticHooks {
             $user_count = count($users);
             $this->log('For segment '.$segment_name.', '.$user_count.' to be processed.');
             $segment_contacts = $this->get_contacts_for_segment($segment_alias);
+            $this->log('Found '.count($segment_contacts).' already part of the segment');
             $country_list = array(); 
             foreach($site['users'] as $user) {
+                $person = array(
+                    // these are field aliases, and values
+                    'email' => $user['email'],
+                    // 'ipAddress' => $user['ipAddress'],
+                );
+                // if there's no firstname, use the user's username
+                $person['firstname'] = ($user['firstname']) ? $user['firstname'] : $username;
+                // work out the full country name from the abbreviation, because
+                // Mautic doesn't store the abbreviation for some reason. So
+                // much for open standards *sigh*
+                // only include the country if the field is set.
+                if ($user['country'] != '') {
+                    $person['country'] = $country_picker[$user['country']];
+                    // adjust a few countries where we have a different country name from Mautic
+                    switch ($person['country']) {
+                        case 'Korea':
+                            $person['country'] = "South Korea";
+                            break;  
+                        case 'Russian Federation':
+                            $person['country'] = "Russia";              
+                            break;  
+                       case 'Trinidad And Tobago':
+                            $person['country'] = "Trinidad and Tobago";
+                            break;  
+                       default:
+                            break;
+                    }
+                    $country_list[$person['country']] += 1;  
+                    $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
+                }
+                // before we go to the trouble of adding this user, check if they're already 
+                // in the segment... if so, skip them. 
                 if (isset($segment_contacts[$user['email']])) {
                     $this->log('Skipping User with email '.$user['email'].', already in '
                         .$site_tag.', id: '.$segment_contacts[$user['email']]['m_id']
@@ -555,38 +588,25 @@ class MauticSync extends MauticHooks {
                     continue;
                 }
                 $this->log('creating/modifying user: '. print_r($user, true));
-                $person = array(
-                    // these are field aliases, and values
-                    'email' => $user['email'],
-                //    'ipAddress' => $user['ipAddress'],
-                );
-                // if there's no firstname, use the user's username
-                $person['firstname'] = ($user['firstname']) ? $user['firstname'] : $username;
                 // if there's no lastname, don't set one.
                 if (isset($user['lastname'])) $person['lastname'] = $user['lastname'];
-                // work out the full country name from the abbreviation, because
-                // Mautic doesn't store the abbreviation for some reason. So
-                // much for open standards *sigh*
-                // only include the country if the field is set.
-                if ($user['country'] != '') {
-                    $person['country'] = $country_picker[$user['country']];
-                    $country_list[$person['country']] += 1;  
-                    $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
-                }
                 $this->log($user_count.' **** person to be made a contact: '.print_r($person, true));
                 // now make it happen in Mautic!
                 $contact = $this->create_contact($person);
                 //$this->log('segment: '.print_r($segment, true));
-                $this->log('adding user '.$contact['contact']['id'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
+                $this->log('adding user '.$user['email'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
                 $this->add_contact_to_segment($contact['contact']['id'], $segment['id']);
                 $user_count--;
             }
             $this->log('Number of countries represented: '.count($country_list));
             // sort in descending order.
             arsort($country_list);
+            $num_counted = 0;
             foreach ($country_list as $country => $count) {
-              $this->log($country.' has '.$count.' people.');
+              $this->log($country.' '.$count);
+              $num_counted += $count;
             }
+            $this->log('Total number of segment contacts specifying a country: '.$num_counted.' out of '.count($users));
         }
     }
 }

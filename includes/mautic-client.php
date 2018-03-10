@@ -201,7 +201,7 @@ class MauticClient extends MauticAuth {
             $people = array(); // initialise array we're going to return
             $searchFilter = 'segment:'.$segment_alias; // initialise
             $this->log('searchFilter: '.$searchFilter);
-            if ($contacts = $contactApi->getList($searchFilter,0,count($contacts),
+            if ($contacts = $contactApi->getList($searchFilter,0,10000,
                 '','',true,true)) {
                 $this->log('contacts info: '.print_r($contacts, true));
                 if (!$this->api_error($contacts)) {
