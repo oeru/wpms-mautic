@@ -503,6 +503,7 @@ class MauticSync extends MauticHooks {
             $searchFilter = 'blog_id='.$site_id.
                 '&orderby=display_name&orderby=nicename';
             $users = get_users($searchFilter);
+            $this->log('For site '.$site_tag.', '.count($users).' to be processed.');
             foreach ($users as $user) {
                 $name = array();
                 $user_id = $user->ID;
@@ -540,12 +541,14 @@ class MauticSync extends MauticHooks {
                     $this->log('Creating segment '.$segment_alias.' failed.');
                 }
             }
+            $user_count = count($users);
+            $this->log('For segment '.$segment_name.', '.$user_count.' to be processed.');
             foreach($site['users'] as $user) {
-                //$this->log('creating/modifying user: '. print_r($user, true));
+                $this->log('creating/modifying user: '. print_r($user, true));
                 $person = array(
                     // these are field aliases, and values
                     'email' => $user['email'],
-                    'ipAddress' => $user['ipAddress'],
+                //    'ipAddress' => $user['ipAddress'],
                 );
                 // if there's no firstname, use the user's username
                 $person['firstname'] = ($user['firstname']) ? $user['firstname'] : $username;
@@ -559,12 +562,13 @@ class MauticSync extends MauticHooks {
                     $person['country'] = $country_picker[$user['country']];
                     $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
                 }
-                $this->log('**** person to be made a contact: '.print_r($person, true));
+                $this->log($user_count.' **** person to be made a contact: '.print_r($person, true));
                 // now make it happen in Mautic!
                 $contact = $this->create_contact($person);
                 //$this->log('segment: '.print_r($segment, true));
                 $this->log('adding user '.$contact['contact']['id'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
                 $this->add_contact_to_segment($contact['contact']['id'], $segment['id']);
+                $user_count--;
             }
         }
     }
