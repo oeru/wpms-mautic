@@ -504,6 +504,7 @@ class MauticSync extends MauticHooks {
                 '&orderby=display_name&orderby=nicename';
             $users = get_users($searchFilter);
             $this->log('For site '.$site_tag.', '.count($users).' to be processed.');
+            // get a list of contacts *already* in the segment, to compare emails
             foreach ($users as $user) {
                 $name = array();
                 $user_id = $user->ID;
@@ -543,7 +544,15 @@ class MauticSync extends MauticHooks {
             }
             $user_count = count($users);
             $this->log('For segment '.$segment_name.', '.$user_count.' to be processed.');
+            $segment_contacts = $this->get_contacts_for_segment($segment_alias);
             foreach($site['users'] as $user) {
+                if (isset($segment_contacts[$user['email']])) {
+                    $this->log('Skipping User with email '.$user['email'].', already in '
+                        .$site_tag.', id: '.$segment_contacts[$user['email']]['m_id']
+                        .' name: '.$segment_contacts[$user['email']]['m_name'].'.');
+                    $user_count--;
+                    continue;
+                }
                 $this->log('creating/modifying user: '. print_r($user, true));
                 $person = array(
                     // these are field aliases, and values

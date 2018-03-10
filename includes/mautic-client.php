@@ -195,7 +195,30 @@ class MauticClient extends MauticAuth {
     }
 
     // get the contacts in a segment
-    public function get_contacts_for_segment($segment_id, $contacts) {
+    public function get_contacts_for_segment($segment_alias) {
+        $this->log('Get contacts for segment '.$segment_alias);
+        if ($contactApi = $this->init_api('contacts')) {
+            $people = array(); // initialise array we're going to return
+            $searchFilter = 'segment:'.$segment_alias; // initialise
+            $this->log('searchFilter: '.$searchFilter);
+            if ($contacts = $contactApi->getList($searchFilter,0,count($contacts),
+                '','',true,true)) {
+                $this->log('contacts info: '.print_r($contacts, true));
+                if (!$this->api_error($contacts)) {
+                    //$this->log('contact info: '.var_dump($contacts, true));
+                    foreach($contacts['contacts'] as $contact) {
+                        //$this->log('contact core fields:'.print_r($contact['fields']['core'], true));
+                        $email = $contact['fields']['core']['email']['value'];
+                        //$people[$email]['contact'] = $contact['fields']['core'];
+                        $people[$email]['m_id'] = $contact['id'];
+                        $people[$email]['m_name'] = $contact['fields']['core']['firstname']['value'].' '.
+                            $contact['fields']['core']['lastname']['value'];
+                    }
+                    return $people;
+                }
+            }
+        }
+        return false;
     }
 
     // create a new segment for a site
