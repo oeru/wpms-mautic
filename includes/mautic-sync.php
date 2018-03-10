@@ -545,6 +545,7 @@ class MauticSync extends MauticHooks {
             $user_count = count($users);
             $this->log('For segment '.$segment_name.', '.$user_count.' to be processed.');
             $segment_contacts = $this->get_contacts_for_segment($segment_alias);
+            $country_list = array(); 
             foreach($site['users'] as $user) {
                 if (isset($segment_contacts[$user['email']])) {
                     $this->log('Skipping User with email '.$user['email'].', already in '
@@ -569,6 +570,7 @@ class MauticSync extends MauticHooks {
                 // only include the country if the field is set.
                 if ($user['country'] != '') {
                     $person['country'] = $country_picker[$user['country']];
+                    $country_list[$person['country']] += 1;  
                     $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
                 }
                 $this->log($user_count.' **** person to be made a contact: '.print_r($person, true));
@@ -578,6 +580,12 @@ class MauticSync extends MauticHooks {
                 $this->log('adding user '.$contact['contact']['id'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
                 $this->add_contact_to_segment($contact['contact']['id'], $segment['id']);
                 $user_count--;
+            }
+            $this->log('Number of countries represented: '.count($country_list));
+            // sort in descending order.
+            arsort($country_list);
+            foreach ($country_list as $country => $count) {
+              $this->log($country.' has '.$count.' people.');
             }
         }
     }
