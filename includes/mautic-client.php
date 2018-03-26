@@ -286,11 +286,13 @@ class MauticClient extends MauticAuth {
                 'ipAddress' => $person['ipAddress'],
             );
             if ($response = $contactApi->create($data)) {
+                $this->log('Created new contact: '. $data['email']);
                 //$this->log('response: '. print_r($response, true));
                 $contact_id = $response['contact']['id']; // API user
             }
             $createIfNotFound = true;
             if ($contact = $contactApi->edit($contact_id, $data, $createIfNotFound)) {
+                $this->log('Contact retrieved! '. $data['email']);
                 //$this->log('Contact retrieved! '. print_r($contact, true));
                 //$contact = $response[$contactApi->itemName()];
                 //$this->print_fields($contact['contact']['fields'], 'Contact details');

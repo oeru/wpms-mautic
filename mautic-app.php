@@ -54,6 +54,10 @@ define('MAUTIC_API_ENDPOINT', 'api');
 //// turn on debugging with true, off with false
 define('MAUTIC_DEBUG', true);
 //define('MAUTIC_DEBUG', false);
+// allow extra time to accommodate the fact that our learners might be
+// up to 12 hrs different from our time zones - based UTC, which our server uses
+define('MAUTIC_TZ_PRE_OFFSET', 12);
+define('MAUTIC_TZ_POST_OFFSET', 12);
 
 // include Mautic API and Auth code
 include_once MAUTIC_PATH . '/vendor/autoload.php';

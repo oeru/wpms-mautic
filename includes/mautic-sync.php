@@ -16,6 +16,16 @@ class MauticSync extends MauticHooks {
         'unmatched_users' => 'Unmatched Users',
         'users_by_site' => 'Users By Site', */
     );
+    protected $site_map = array(
+        'lida101' => array(
+            'start_long' => 'Wed 14 March 2018',
+            'start_short' => '20180314',
+        ),
+        'lida102' => array(
+            'start_long' => 'Wed 4 April 2018',
+            'start_short' => '20180404',
+        )
+    );
 
     // register stuff when constructing this object instance
     public function __construct() {
@@ -472,7 +482,10 @@ class MauticSync extends MauticHooks {
         /*if ( ! wp_verify_nonce( $_POST['mautic-catchup-nonce'], 'mautic-catchup') ) {
             $this->log('nonce not verified!');
             die ("Busted - someone's trying something funny in submit!");
-        } else {*/
+        } else { */
+
+        //$this->log('Testing *site_map*');
+        //$this->log('The sites we\'re looking for: '. print_r($this->site_map, true));
 
         // store the info for processing
         $list = array();
@@ -488,8 +501,8 @@ class MauticSync extends MauticHooks {
             $site_id = $site->blog_id;
             $site_tag = $this->get_site_tag($site);
             //
-            // we're only looking to create a list for this course!
-            if ($site_tag != 'lida101') {
+            // we're only looking to create lists for scheduled courses!
+            if (!array_key_exists($site_tag, $this->site_map)) {
                 $this->log('skipping site "'.$site_tag.'"');
                 continue;
             }
@@ -521,17 +534,16 @@ class MauticSync extends MauticHooks {
                     'lastname' => $name['lname'],
                     'email' => $user->user_email,
                     'country' => $country,
-                    'ipAddress' => '127.0.0.1',
+                    'ipAddress' => '127.0.0.1'
                 );
             }
         }
-        $start_date_long = 'Wed 14 March 2018';
-        $start_date_short = '20180314';
         $this->log('##### starting processing of sites and users ######');
         foreach($list as $site_id => $site) {
-            $this->log('Site '.quotemeta($site['name']).' ('.quotemeta($site['tag']).'): ');
-            $segment_name = quotemeta($site['name'].' starting '.$start_date_long);
-            $segment_alias = quotemeta($site['tag'].'-'.$start_date_short);
+            //$this->log('Site (pre-slashes)'.$site['name'].' ('.$site['tag'].'): ');
+            $segment_name = quotemeta($site['name']).' starting '.$this->site_map[$site['tag']]['start_long'];
+            $segment_alias = quotemeta($site['tag']).'-'.$this->site_map[$site['tag']]['start_short'];
+            //$this->log('Site (post-slashes) '.$site['name'].' ('.$site['tag'].'): ');
             if ($segment = $this->has_segment($segment_alias)) {
                 $this->log('Segment "'.$segment_alias.'" exists:'.print_r($segment, true));
             } else {
@@ -542,16 +554,16 @@ class MauticSync extends MauticHooks {
                     $this->log('Creating segment '.$segment_alias.' failed.');
                 }
             }
-            $user_count = count($users);
+            $user_count = count($site['users']);
             $this->log('For segment '.$segment_name.', '.$user_count.' to be processed.');
             $segment_contacts = $this->get_contacts_for_segment($segment_alias);
             $this->log('Found '.count($segment_contacts).' already part of the segment');
-            $country_list = array(); 
+            $country_list = array();
             foreach($site['users'] as $user) {
                 $person = array(
                     // these are field aliases, and values
                     'email' => $user['email'],
-                    // 'ipAddress' => $user['ipAddress'],
+                    //'ipAddress' => $user['ipAddress'],
                 );
                 // if there's no firstname, use the user's username
                 $person['firstname'] = ($user['firstname']) ? $user['firstname'] : $username;
@@ -565,24 +577,24 @@ class MauticSync extends MauticHooks {
                     switch ($person['country']) {
                         case 'Korea':
                             $person['country'] = "South Korea";
-                            break;  
+                            break;
                         case 'Russian Federation':
-                            $person['country'] = "Russia";              
-                            break;  
+                            $person['country'] = "Russia";
+                            break;
                        case 'Trinidad And Tobago':
                             $person['country'] = "Trinidad and Tobago";
-                            break;  
+                            break;
                        default:
                             break;
                     }
-                    $country_list[$person['country']] += 1;  
+                    $country_list[$person['country']] += 1;
                     $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
                 }
-                // before we go to the trouble of adding this user, check if they're already 
-                // in the segment... if so, skip them. 
+                // before we go to the trouble of adding this user, check if they're already
+                // in the segment... if so, skip them.
                 if (isset($segment_contacts[$user['email']])) {
                     $this->log('Skipping User with email '.$user['email'].', already in '
-                        .$site_tag.', id: '.$segment_contacts[$user['email']]['m_id']
+                        .$segment_alias.', id: '.$segment_contacts[$user['email']]['m_id']
                         .' name: '.$segment_contacts[$user['email']]['m_name'].'.');
                     $user_count--;
                     continue;
@@ -595,18 +607,43 @@ class MauticSync extends MauticHooks {
                 $contact = $this->create_contact($person);
                 //$this->log('segment: '.print_r($segment, true));
                 $this->log('adding user '.$user['email'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
-                $this->add_contact_to_segment($contact['contact']['id'], $segment['id']);
+                if ($this->add_contact_to_segment($contact['contact']['id'], $segment['id'])) {
+                    $this->log('added user '.$user['email'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
+                } else {
+                    $this->log('failed to add user '.$user['email'].' to segment "'.$segment_name.'" ('.$segment_alias.')');
+                }
                 $user_count--;
             }
-            $this->log('Number of countries represented: '.count($country_list));
-            // sort in descending order.
-            arsort($country_list);
-            $num_counted = 0;
-            foreach ($country_list as $country => $count) {
-              $this->log($country.' '.$count);
-              $num_counted += $count;
-            }
-            $this->log('Total number of segment contacts specifying a country: '.$num_counted.' out of '.count($users));
+            $this->demographics($country_list, count($site['users']));
+        }
+    }
+
+    function demographics($country_list, $user_count) {
+        $this->log('Number of countries represented: '.count($country_list));
+        // sort in descending order.
+        arsort($country_list);
+        $countries = array();
+        $num_counted = 0;
+        foreach ($country_list as $country => $count) {
+          $countries[$count][] = $country;
+          $this->log($country.' '.$count);
+          $num_counted += $count;
+        }
+        $this->log('Total number of segment contacts specifying a country: '.
+            $num_counted.' out of '.$user_count);
+
+        // another message
+        $this->log(count($country_list).' countries were listed by '.$num_counted. ' (out of '.
+            $user_count.' users total) with the following breakdown:');
+        krsort($countries, SORT_NUMERIC);
+        foreach($countries as $count => $array) {
+            $last = array_slice($array, -1);
+            $first = join(', ', array_slice($array, 0, -1));
+            $both  = array_filter(array_merge(array($first), $last), 'strlen');
+            $joiner = (count($array) > 2) ? ', and ' : ' and ';
+            $each = (count($array) > 1) ? 'each of ' : '';
+            $string = join($joiner , $both);
+            $this->log('  '.$count.' from '.$each.$string);
         }
     }
 }
