@@ -80,6 +80,99 @@ class MauticSync extends MauticHooks {
         $this->site_tab($id);
     }
 
+    public function demographics_init($id = '1') {
+        $this->log('in demographics_init, id = '. $id);
+
+        // don't get the main site...
+        $site_id = $id;
+        $site = get_site($site_id);
+        $site_tag = $this->get_site_tag($site);
+        //
+        $this->log('site id: '.$site_id.', tag: '.$site_tag.'.');
+        // get additional info about the blog
+        $site_info = get_blog_details($site_id);
+        $this->log('Site name: '. $site_info->blogname);
+        // get the WP users for this site/course
+        $searchFilter = 'blog_id='.$site_id.
+            '&orderby=display_name&orderby=nicename';
+        $users = get_users($searchFilter);
+        $this->log('For site '.$site_tag.', '.count($users).' to be processed.');
+        // get a list of contacts *already* in the segment, to compare emails
+        $user_count = count($users);
+        $country_list = array();
+        foreach ($users as $user) {
+            if ($country = get_user_meta($user->ID, 'usercountry', true)) {
+               if ($country != '') {
+                  $country = $this->translate_country($country);
+                  $country_list[$country] += 1;
+                  $this->log('setting country to '.$country);
+                }
+            }
+        }
+        $this->log('Number of countries represented: '.count($country_list));
+        // sort in descending order.
+        arsort($country_list);
+        $countries = array();
+        $num_counted = 0;
+        foreach ($country_list as $country => $count) {
+          $countries[$count][] = $country;
+          $this->log($country.' '.$count);
+          $num_counted += $count;
+        }
+        ?>
+        <div class="mautic-demographics demographics">
+            <h2 class="mautic-demographics demographics"><?php echo MAUTIC_DEMOGRAPHICS_TITLE; ?></h2>
+        <?php
+        $this->log('Total number of segment contacts specifying a country: '.
+            $num_counted.' out of '.$user_count);
+        // another message
+        $this->log(count($country_list).' countries were listed by '.$num_counted. ' (out of '.
+            $user_count.' users total) with the following breakdown:');
+        $msg = '<h3 class="demographics">'.count($country_list).' countries were listed by '.$num_counted. ' (out of '.
+            $user_count.' users total) with the following breakdown:</h3>';
+        $msg .= '    <p class="demographics">';
+        krsort($countries, SORT_NUMERIC);
+        foreach($countries as $count => $array) {
+            sort($array, SORT_NATURAL);
+            $last = array_slice($array, -1);
+            $first = join(', ', array_slice($array, 0, -1));
+            $both  = array_filter(array_merge(array($first), $last), 'strlen');
+            $joiner = (count($array) > 2) ? ', and ' : ' and ';
+            $each = (count($array) > 1) ? 'each of ' : '';
+            $string = join($joiner , $both);
+            $msg .= '<span class="demographics country"><strong>'.$count.'</strong> from '.$each.$string.'</span><br/>';
+            $this->log('  '.$count.' from '.$each.$string);
+        }
+        $msg .= '    </p><!-- End demographics p-->';
+        print $msg;
+        ?>
+        </div><!-- End of demographics -->
+        <?php
+    }
+
+    // convert a country code into a country name or false if there's no match
+    protected function translate_country($abbr) {
+        global $country_picker;
+        if ($country = $country_picker[$abbr]) {
+            // adjust a few countries where we have a different country name from Mautic
+            switch ($country) {
+                case 'Korea':
+                    $country = "South Korea";
+                    break;
+                case 'Russian Federation':
+                    $country = "Russia";
+                    break;
+               case 'Trinidad And Tobago':
+                    $country = "Trinidad and Tobago";
+                    break;
+               default:
+                    break;
+            }
+            return $country;
+        }
+        return false;
+    }
+
     public function catchup_init() {
         $this->log('in catchup_init');
         // set up appropriate ajax js file
@@ -407,6 +500,9 @@ class MauticSync extends MauticHooks {
         $path =  '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-site.php';
         $links['site-mautic-sync'] =  array('label' => __('Mautic Sync'),
             'url' => $path, 'cap' => 'manage_sites');
+        $path = '../..'.parse_url(MAUTIC_URL, PHP_URL_PATH).'mautic-site-demographics.php';
+        $links['site-mautic-demographics'] =  array('label' => __('Demographics'),
+            'url' => $path, 'cap' => 'manage_sites');
         return $links;
     }
 
@@ -473,19 +569,11 @@ class MauticSync extends MauticHooks {
 
     // ajax function
     public function catchup_submit() {
-        global $wpdb, $country_picker;
-        $result = array();
-        $usermeta_table = "wp_usermeta";
-        $user_table = "wp_users";
-
         $this->log('in catchup_submit:'.print_r($_POST, true));
         /*if ( ! wp_verify_nonce( $_POST['mautic-catchup-nonce'], 'mautic-catchup') ) {
             $this->log('nonce not verified!');
             die ("Busted - someone's trying something funny in submit!");
         } else { */
-
-        //$this->log('Testing *site_map*');
-        //$this->log('The sites we\'re looking for: '. print_r($this->site_map, true));
 
         // store the info for processing
         $list = array();
@@ -572,23 +660,12 @@ class MauticSync extends MauticHooks {
                 // much for open standards *sigh*
                 // only include the country if the field is set.
                 if ($user['country'] != '') {
-                    $person['country'] = $country_picker[$user['country']];
-                    // adjust a few countries where we have a different country name from Mautic
-                    switch ($person['country']) {
-                        case 'Korea':
-                            $person['country'] = "South Korea";
-                            break;
-                        case 'Russian Federation':
-                            $person['country'] = "Russia";
-                            break;
-                       case 'Trinidad And Tobago':
-                            $person['country'] = "Trinidad and Tobago";
-                            break;
-                       default:
-                            break;
+                    if ($person['country'] = $this->translate_country($user['country'])) {
+                        $country_list[$person['country']] += 1;
+                        $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
+                    } else {
+                        $this->log('No country found for designator '.$user['country'].'!!');
                     }
-                    $country_list[$person['country']] += 1;
-                    $this->log('setting country for '.$person['firstname'].' to '.$person['country']);
                 }
                 // before we go to the trouble of adding this user, check if they're already
                 // in the segment... if so, skip them.
@@ -614,36 +691,7 @@ class MauticSync extends MauticHooks {
                 }
                 $user_count--;
             }
-            $this->demographics($country_list, count($site['users']));
-        }
-    }
-
-    function demographics($country_list, $user_count) {
-        $this->log('Number of countries represented: '.count($country_list));
-        // sort in descending order.
-        arsort($country_list);
-        $countries = array();
-        $num_counted = 0;
-        foreach ($country_list as $country => $count) {
-          $countries[$count][] = $country;
-          $this->log($country.' '.$count);
-          $num_counted += $count;
-        }
-        $this->log('Total number of segment contacts specifying a country: '.
-            $num_counted.' out of '.$user_count);
-
-        // another message
-        $this->log(count($country_list).' countries were listed by '.$num_counted. ' (out of '.
-            $user_count.' users total) with the following breakdown:');
-        krsort($countries, SORT_NUMERIC);
-        foreach($countries as $count => $array) {
-            $last = array_slice($array, -1);
-            $first = join(', ', array_slice($array, 0, -1));
-            $both  = array_filter(array_merge(array($first), $last), 'strlen');
-            $joiner = (count($array) > 2) ? ', and ' : ' and ';
-            $each = (count($array) > 1) ? 'each of ' : '';
-            $string = join($joiner , $both);
-            $this->log('  '.$count.' from '.$each.$string);
+            //$this->demographics($country_list, count($site['users']));
         }
     }
 }

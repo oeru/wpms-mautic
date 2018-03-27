@@ -49,6 +49,10 @@ define('MAUTIC_ADMIN_MENU', 'Mautic Settings');
 define('MAUTIC_CATCHUP_SLUG', 'mautic_catchup');
 define('MAUTIC_CATCHUP_TITLE', 'Mautic Synchronisation Catch Up');
 define('MAUTIC_CATCHUP_MENU', 'Mautic Catch Up');
+// demographcis details
+define('MAUTIC_DEMOGRAPHICS_SLUG', 'mautic_demographics');
+define('MAUTIC_DEMOGRAPHICS_TITLE', 'Site Demographics');
+define('MAUTIC_DEMOGRAPHICS_MENU', 'Demographics');
 // api endpoint
 define('MAUTIC_API_ENDPOINT', 'api');
 //// turn on debugging with true, off with false
