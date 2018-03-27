@@ -119,16 +119,19 @@ class MauticSync extends MauticHooks {
           $this->log($country.' '.$count);
           $num_counted += $count;
         }
+        $this->log('Total number of segment contacts specifying a country: '.
+            $num_counted.' out of '.$user_count);
         ?>
         <div class="mautic-demographics demographics">
             <h2 class="mautic-demographics demographics"><?php echo MAUTIC_DEMOGRAPHICS_TITLE; ?></h2>
         <?php
-        $this->log('Total number of segment contacts specifying a country: '.
-            $num_counted.' out of '.$user_count);
-        // another message
-        $this->log(count($country_list).' countries were listed by '.$num_counted. ' (out of '.
-            $user_count.' users total) with the following breakdown:');
-        $msg = '<h3 class="demographics">'.count($country_list).' countries were listed by '.$num_counted. ' (out of '.
+        $country_text = "countries were";
+        if (count($country_list) == 1) {
+            $country_text = "country is";
+        }
+        $this->log(count($country_list).' '.$country_text.' listed by '.$num_counted. ' users (out of '.
+            $user_count.' total) with the following breakdown:');
+        $msg = '<h3 class="demographics">'.count($country_list).' '.$country_text.' listed by '.$num_counted. ' (out of '.
             $user_count.' users total) with the following breakdown:</h3>';
         $msg .= '    <p class="demographics">';
         krsort($countries, SORT_NUMERIC);
@@ -140,7 +143,7 @@ class MauticSync extends MauticHooks {
             $joiner = (count($array) > 2) ? ', and ' : ' and ';
             $each = (count($array) > 1) ? 'each of ' : '';
             $string = join($joiner , $both);
-            $msg .= '<span class="demographics country"><strong>'.$count.'</strong> from '.$each.$string.'</span><br/>';
+            $msg .= '        <span class="demographics country"><strong>'.$count.'</strong> from '.$each.$string.'</span><br/>';
             $this->log('  '.$count.' from '.$each.$string);
         }
         $msg .= '    </p><!-- End demographics p-->';
