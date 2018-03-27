@@ -56,7 +56,7 @@ define('MAUTIC_DEMOGRAPHICS_MENU', 'Demographics');
 // api endpoint
 define('MAUTIC_API_ENDPOINT', 'api');
 //// turn on debugging with true, off with false
-define('MAUTIC_DEBUG', true);
+define('MAUTIC_DEBUG', false);
 //define('MAUTIC_DEBUG', false);
 // allow extra time to accommodate the fact that our learners might be
 // up to 12 hrs different from our time zones - based UTC, which our server uses
