@@ -17,15 +17,39 @@ class MauticSync extends MauticHooks {
         'users_by_site' => 'Users By Site', */
     );
     protected $site_map = array(
-        'lida101' => array(
+       /* 'lida101' => array(
             'start_long' => 'Wed 14 March 2018',
             'start_short' => '20180314',
         ),
         'lida102' => array(
             'start_long' => 'Wed 4 April 2018',
             'start_short' => '20180404',
-        )
-    );
+        )*/
+        /*'lida103' => array(
+            'start_long' => 'Wed 9 May 2018',
+            'start_short' => '20180509',
+        )*/
+        /*'lida104' => array(
+            'start_long' => 'Wed 13 June 2018',
+            'start_short' => '20180612',
+        )*/
+        'ipm101' => array(
+            'start_long' => 'Wed 19 September 2018',
+            'start_short' => '20180919',
+        ),
+        'ipm102' => array(
+            'start_long' => 'Wed 17 October 2018',
+            'start_short' => '20181017',
+        ),
+        'ipm103' => array(
+            'start_long' => 'Wed 14 November 2018',
+            'start_short' => '20181114',
+        ),
+        'ipm104' => array(
+            'start_long' => 'Wed 5 December 2018',
+            'start_short' => '20181205',
+        ),
+   );
 
     // register stuff when constructing this object instance
     public function __construct() {
